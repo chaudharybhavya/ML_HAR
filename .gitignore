@@ -1,0 +1,6 @@
+.venv/
+data/raw/
+CLAUDE.md
+.ipynb_checkpoints/
+__pycache__/
+.DS_Store
