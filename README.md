@@ -4,7 +4,6 @@
 - Bhavya Chaudhary (25110075): Person A
 - Lakshika Aswal (25110179): Person B
 
-**Final deadline:** 17 November 2026: website + this repository.
 
 ## The question
 Given 2.56 seconds of accelerometer and gyroscope readings from a phone worn at the waist, can we tell which of six activities a **new person** (never seen in training) is doing?
