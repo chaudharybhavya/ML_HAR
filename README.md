@@ -2,7 +2,7 @@
 
 **ES 335 course project (IIT Gandhinagar)**
 - Bhavya Chaudhary (25110075): Person A
-- Lakshika Aswal (25110075): Person B
+- Lakshika Aswal (25110179): Person B
 
 **Final deadline:** 17 November 2026: website + this repository.
 
