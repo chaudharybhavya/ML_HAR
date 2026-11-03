@@ -2,7 +2,7 @@
 
 **ES 335 course project (IIT Gandhinagar)**
 - Bhavya Chaudhary (25110075): Person A
-- [Partner name] ([roll number]): Person B
+- Lakshika Aswal (25110075): Person B
 
 **Final deadline:** 17 November 2026: website + this repository.
 
@@ -56,8 +56,8 @@ Then open the notebooks in order in VS Code (Jupyter), and run each with **Resta
 
 ## Work split
 - **Person A (Bhavya):** Parts 1, 3, 4, 7, 8, plus the website sections for them.
-- **Person B ([partner]):** Parts 2, 5, 6, 9, 10, plus the website sections for them.
-- **Shared:** Part 0 (setup), Part 11 (website shell), Part 12 (README, AI disclosure, viva prep).
+- **Person B (Lakshika):** Parts 2, 5, 6, 9, 10, plus the website sections for them.
+- **Shared:** Part 11 (website shell), Part 12 (README, AI disclosure, viva prep).
 
 ## Rules for both of us (so results are comparable)
 1. **Run `git pull` before you start working**, and push when you stop.
