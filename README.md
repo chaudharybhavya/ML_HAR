@@ -38,19 +38,19 @@ Then open the notebooks in order in VS Code (Jupyter), and run each with **Resta
 | File | What it does | Owner | Status |
 |---|---|---|---|
 | `01_signals.ipynb` | Raw signals, physics (gravity vs motion), data-quality checks | A | done |
-| `02_features_pca.ipynb` | The 561 features, correlation, PCA | B | to do |
+| `02_features_pca.ipynb` | The 561 features, correlation, PCA | B | done |
 | `03_evaluation.ipynb` | Person-wise folds, majority baseline, leakage experiment | A | done |
 | `04_logistic.ipynb` | Logistic regression: how it predicts, tuning C, ridge vs lasso | A | done |
-| `05_svm.ipynb` | RBF SVM, tuning C and gamma | B | to do |
-| `06_random_forest.ipynb` | Random forest, feature importance | B | to do |
+| `05_svm.ipynb` | RBF SVM, tuning C and gamma | B | done |
+| `06_random_forest.ipynb` | Random forest, feature importance | B | done |
 | `07_selection_final_test.ipynb` | Pick the model, one final test on the 9 test people, uncertainty | A | waiting for B's results (05, 06) |
 | `08_errors.ipynb` | Confusion matrix, hardest people, representative errors | A | waiting for 07 |
-| `09_phone_pipeline.ipynb` | Turning our own phone recordings into windows and features | B | to do |
-| `10_phone_test.ipynb` | Testing the final model on our own phone recordings | B | waiting for 07, 09 |
+| `09_phone_pipeline.ipynb` | Turning our own phone recordings into windows and features | B | in progress |
+| `10_phone_test.ipynb` | Testing the final model on our own phone recordings | B | skeleton, waiting for 07 |
 | `results/folds.csv` | The saved person → fold table (used by every model) | A | done |
 | `results/cv_logistic.csv` | Fold scores for all logistic regression settings (63 rows) | A | done |
-| `results/cv_svm.csv` | Fold scores for all SVM settings | B | to do |
-| `results/cv_forest.csv` | Fold scores for all random forest settings | B | to do |
+| `results/cv_svm.csv` | Fold scores for all SVM settings | B | done |
+| `results/cv_forest.csv` | Fold scores for all random forest settings | B | done |
 | `website/` | The interactive site (GitHub Pages) | both | to do |
 
 ## Work split
@@ -84,6 +84,8 @@ Then open the notebooks in order in VS Code (Jupyter), and run each with **Resta
 | Logistic regression, **person split** (correct), default C = 1 | 0.933 ± 0.033 |
 | Logistic regression, ridge, C = 0.01 (one-SE choice) | 0.928 ± 0.039 |
 | **Logistic regression, lasso, C = 0.1 (one-SE choice, ~180 of 561 features)** | **0.934 ± 0.036** |
+| RBF SVM, C = 1, gamma = 0.001 (one-SE choice) | 0.931 ± 0.027 |
+| Random forest, 100 trees, max_depth = 10, max_features = "sqrt" (one-SE choice) | 0.907 ± 0.041 |
 
 The random split hides most of the errors on new people (about 1.5% vs 6.7% error), because neighbouring windows overlap by 50% (95.5% of same-bout pairs share readings exactly) and the same people appear on both sides.
 
@@ -96,6 +98,18 @@ These are cross-validation scores used for *choosing*. They are slightly optimis
 - The model's confidence is informative but not fully trustworthy: about 1 in 5 of its mistakes happen at more than 90% confidence.
 - **Candidate carried to Part 7: lasso, C = 0.1.**
 
+## What Part 2 found (the features and PCA)
+- The 561 features are families of a few ideas (movement size, rhythm/frequency, orientation), repeated over 3 axes, 2 sensors, and time vs frequency. Only 53 describe gravity (orientation).
+- They overlap heavily: 8,206 pairs with |r| > 0.9 (207 with |r| > 0.99), and 431 features have a near-copy. Some are exact copies (e.g. the `tGravityAccMag` columns equal the `tBodyAccMag` ones).
+- PCA (scaler + PCA in a pipeline): 63 / 102 / 179 components keep 90 / 95 / 99% of the variance. PC1 (51%) is movement intensity and almost separates moving from still; lying only separates on PC4/PC5 (gravity); sitting vs standing and the three walking types overlap.
+- Logistic regression on 100 components scores 0.920 vs 0.933 with all 561 features, so we do not use PCA in front of the models: it keeps the largest variation, not the most useful.
+
+## What Parts 5 and 6 found (SVM, random forest)
+- **SVM:** gamma matters far more than C. Too large (0.1) and the model collapses to 0.06 (every window looks unlike every other). 11 of 25 settings are within one SE of the best (C = 10, gamma = 0.001: 0.938); the simplest is C = 1, gamma = 0.001 (0.931). It ties with lasso (better on 2 of 7 folds) and varies a little less between people.
+- **Random forest:** the settings barely matter (all 27 between 0.891 and 0.909); fewer features per split is slightly better. The simplest within one SE is 100 trees, depth 10, "sqrt" (0.907), about 0.025 below the other two models, and worst on fold 1 (people 3, 8, 21: 0.838).
+- **Importance:** impurity and permutation importance disagree almost completely (1 shared feature in their top 15), and shuffling any single feature costs at most 0.0014 macro-F1. Shuffling one gravity feature together with its 4 near-copies costs 0.196, so importance belongs to groups of correlated features, the same reason lasso's choices are unstable.
+- **Candidates carried to Part 7:** SVM C = 1, gamma = 0.001; random forest 100 trees, max_depth = 10, max_features = "sqrt".
+
 ## Key data facts (from Modules 1 and 3)
 - No missing values, no duplicate rows; all features are scaled to [-1, 1].
 - Classes are fairly balanced (13.7–18.9% each); 281–409 windows per person.
@@ -103,8 +117,8 @@ These are cross-validation scores used for *choosing*. They are slightly optimis
 - Folds: 7 folds × 3 people each; no person appears on both sides.
 
 ## Next steps
-- **A:** blocked until `results/cv_svm.csv` and `results/cv_forest.csv` are pushed. Then Part 7 (model selection, final test, bootstrap over people, leave-one-person-out), then Part 8 (error analysis).
-- **B:** `git pull`; then `02_features_pca`, `05_svm`, `06_random_forest`, following rules 4–8. Push the two CSV files as soon as they are ready, and tell A the chosen settings. Then `09_phone_pipeline`.
+- **A:** unblocked: `results/cv_svm.csv` and `results/cv_forest.csv` are pushed. Next: Part 7 (model selection, final test, bootstrap over people, leave-one-person-out), then Part 8 (error analysis).
+- **B:** `02`, `05`, `06` done and pushed. `09_phone_pipeline`: the pipeline is built and checked on UCI's training windows (451 of 561 features reproduced; logistic regression on them scores 0.931 vs 0.933); next, record our own phone data (instructions in `09`, Step 4) and put it in `data/phone/<person>/`. Then `10_phone_test` once Part 7 picks the final model.
 - **Both:** agree on the website layout (the main interaction is a toggle between the random split and the person split).
 
 ## AI assistance (disclosure)
