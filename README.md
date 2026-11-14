@@ -47,8 +47,8 @@ Then open the notebooks in order in VS Code (Jupyter), and run each with **Resta
 | `06_random_forest.ipynb` | Random forest, feature importance | B | done |
 | `07_selection_final_test.ipynb` | Choosing the final model, one final test on the 9 test people, bootstrap interval | A | done |
 | `08_errors.ipynb` | Confusion matrix, per-person errors, gravity check, confidence | A | done |
-| `09_phone_pipeline.ipynb` | Turning our own phone recordings into windows and features | B | in progress |
-| `10_phone_test.ipynb` | Testing the final model on our own phone recordings | B | recordings ready (`bhavya`); results to do |
+| `09_phone_pipeline.ipynb` | Turning our own phone recordings into windows and features | B | done |
+| `10_phone_test.ipynb` | Testing the final model on our own phone recordings | B | done |
 | `results/folds.csv` | The saved person → fold table (used by every model) | A | done |
 | `results/cv_logistic.csv` | Fold scores for all logistic regression settings (63 rows) | A | done |
 | `results/cv_svm.csv` | Fold scores for all SVM settings | B | done |
@@ -56,6 +56,8 @@ Then open the notebooks in order in VS Code (Jupyter), and run each with **Resta
 | `results/test_predictions_lasso.csv` | Final model's probabilities and predictions for every test window | A | done |
 | `results/test_per_person_lasso.csv` | Test macro-F1 for each of the 9 test people | A | done |
 | `data/phone/bhavya/` | Our phone recordings of all 6 activities (see below) | A | done |
+| `results/phone_features_bhavya.csv` | Phone windows (270) with gravity and the 451 reproduced features, on UCI's scale | B | done |
+| `results/phone_predictions_bhavya.csv` | Final model's probabilities and predictions for every phone window | B | done |
 | `website/` | The interactive site (GitHub Pages) | both | to do |
 
 ## Work split
@@ -137,17 +139,24 @@ These are cross-validation scores used for *choosing*. They are slightly optimis
 2. **Unfamiliar postures fail confidently:** the model only knows postures like its training people's.
 3. **Few people:** 9 test people give a wide interval (0.906–0.975); individuals range from 0.83 to 1.00.
 4. **Correlated errors:** windows within a bout and a person are not independent evidence.
-5. **One window at a time:** smoothing predictions over consecutive windows was not tested.
+5. **One window at a time:** smoothing predictions over consecutive windows is not part of the final model; it was only tried as context on our phone recordings (Part 10: a vote over the last 5 windows raised macro-F1 from 0.860 to 0.886).
 6. **No transitions** (e.g. standing up) in the six classes.
 7. **Prediction, not explanation:** feature choices and importances are unstable among correlated features, so we make no causal claims.
 
 ## Our phone recordings (Parts 9–10)
-- **Pipeline (Part 9):** resample to 50 Hz, convert to g and rad/s, align the axes, separate gravity with a 0.3 Hz filter, cut 2.56 s windows with 50% overlap, compute the features. Checked on UCI's own training signals, it reproduces 451 of the 561 features; logistic regression on those 451 scores 0.931 (vs 0.933 on all 561).
+- **Pipeline (Part 9):** resample to 50 Hz, convert to g and rad/s, align the axes if needed (not needed for our recordings), separate gravity with a 0.3 Hz filter, cut 2.56 s windows with 50% overlap, compute the features. Checked on UCI's own training signals, it reproduces 451 of the 561 features; logistic regression on those 451 scores 0.931 (vs 0.933 on all 561).
 - **Recordings (person `bhavya`, 14 Nov 2026):** vivo V2439 (Android 16), phyphox (accelerometer *with* g + gyroscope) at 50 Hz. Phone at the waist on the side of the hip, landscape, screen facing outward, same position for every recording. About 67 s per activity (lying 83 s), one file per activity, about 43 windows per activity after the loader cuts the first and last 5 s.
-- **Orientation check:** standing gives gravity x = +1.00 g, y = 0.01, z = 0.17 (UCI standing: 1.02, −0.12, 0.10), so no axis remapping is needed. Sitting gives z = 0.34 (UCI sitting: 0.38).
-- **Notes:** the upstairs file includes a short landing/turn (around 35–40 s); two extra, shorter stair recordings were made but not used (the loader reads one file per activity). Lying puts gravity on y (0.99) rather than split between y and z as in UCI (0.79, 0.57), because the phone sat more on the side of the hip.
+- **Orientation check:** standing gives gravity x = +1.00 g, y = 0.01, z = 0.17 (average of UCI's 21 training people: 1.00, −0.16, −0.03), so no axis remapping is needed. Sitting gives z = 0.34 (UCI average: 0.15).
+- **Notes:** the upstairs file includes a short landing/turn (around 35–40 s); two extra, shorter stair recordings were made but not used (the loader reads one file per activity). Lying puts gravity on y (0.99) rather than split between y and z as in UCI (average 0.65, 0.56), because the phone sat more on the side of the hip.
 - **Expected confusions** from simple summaries: walking vs upstairs (same bounce, differ by forward tilt and rhythm) and sitting vs standing (differ only by tilt).
-- **Results:** to be added from `10_phone_test.ipynb`. These recordings are a blind test: the final model was fixed before they were made.
+- **Results (Part 10):** a blind test; the final model was fixed in Part 7 before the recordings were made, and nothing was tuned on them.
+  - The 561-feature model cannot take phone windows, so the **same setting** (lasso, C = 0.1) was trained on the **451 reproduced features** of the 21 training people. Cross-validation: 0.926 ± 0.042 (vs 0.934 ± 0.036 with all 561), lower on every fold, but the average drop (0.008) is smaller than one SE (0.014).
+  - **Phone: macro-F1 0.860, accuracy 0.870** (235 of 270 windows). Recall: walking 1.000, lying 1.000, downstairs 0.953, standing 0.860, sitting 0.791, upstairs 0.581.
+  - **Same two error blocks as Part 8:** walking types 19 of 35 errors (up → walk 13) and sitting vs standing 14; moving vs still only 2.
+  - **Why sitting vs standing fails:** UCI's people separate the two mostly by gravity y (averages: sitting +0.14 g, standing −0.16 g). On this phone both postures sit at y ≈ 0 and differ only along z (0.34 vs 0.17 g), where UCI's sitting and standing overlap.
+  - **Confidence:** at 0.9 or above the model is still right 98.7% of the time (Part 8: 99%), but only 56% of phone windows reach that confidence (Part 8: 78%).
+  - Context only: a majority vote over the last 5 windows raises macro-F1 to 0.886 (not part of the final model).
+  - **Caveat:** one person, one phone, one session, so no interval; it shows that the model transfers and how it fails, not how well it works for people in general.
 
 ## Key data facts (from Modules 1 and 3)
 - No missing values, no duplicate rows; all features are scaled to [-1, 1].
@@ -156,13 +165,19 @@ These are cross-validation scores used for *choosing*. They are slightly optimis
 - Folds: 7 folds × 3 people each; no person appears on both sides.
 
 ## Next steps
-- **A:** Parts 1, 3, 4, 7, 8 are done, and the phone recordings for `bhavya` are in `data/phone/bhavya/`. Left: check that all numbers agree across notebooks and README; viva prep.
-- **B:** run `10_phone_test.ipynb` on `data/phone/bhavya/` (no axis remapping needed: standing already gives x = +1.00 g) and add the results to the phone section above.
-- **Both:** final check and submission.
+All ten notebooks are done. Left, for both of us:
+- **Website** (Part 11): the interactive site (`website/`), with the toggle between the random split and the person split.
+- **Viva prep** (Part 12).
+- **Final check:** numbers agree across notebooks and README; every notebook runs with Restart & Run All; then submission.
 
 ## AI assistance (disclosure)
 We used Claude (Anthropic) as a tutor and assistant. For Bhavya's parts, it:
 - explained concepts, the physics of the data, and how each method works;
-- interpreted outputs with us and helped with debugging;
+- interpreted outputs with us and helped with debugging.
+
+For Lakshika's parts, it:
+- explained concepts and how each method works;
+- helped with debugging;
+- helped draft notebook text and README sections.
 
 We are responsible for all results and can explain every step.
