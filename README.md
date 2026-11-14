@@ -58,7 +58,7 @@ Then open the notebooks in order in VS Code (Jupyter), and run each with **Resta
 | `data/phone/bhavya/` | Our phone recordings of all 6 activities (see below) | A | done |
 | `results/phone_features_bhavya.csv` | Phone windows (270) with gravity and the 451 reproduced features, on UCI's scale | B | done |
 | `results/phone_predictions_bhavya.csv` | Final model's probabilities and predictions for every phone window | B | done |
-| `website/` | The interactive site (GitHub Pages) | both | to do |
+| `docs/` | The interactive website, live at https://chaudharybhavya.github.io/ML_HAR/ (GitHub Pages; built from `results/`, phone data by `docs/make_phone_data.py`) | both | done |
 
 ## Work split
 - **Person A (Bhavya):** Parts 1, 3, 4, 7, 8, plus the website sections for them.
@@ -166,7 +166,7 @@ These are cross-validation scores used for *choosing*. They are slightly optimis
 
 ## Next steps
 All ten notebooks are done. Left, for both of us:
-- **Website** (Part 11): the interactive site (`website/`), with the toggle between the random split and the person split.
+- **Website** (Part 11): live at https://chaudharybhavya.github.io/ML_HAR/ (all sections filled in, including the phone test); a final read-through together.
 - **Viva prep** (Part 12).
 - **Final check:** numbers agree across notebooks and README; every notebook runs with Restart & Run All; then submission.
 
