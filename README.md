@@ -97,7 +97,7 @@ python docs/make_phone_data.py    # docs/phone.js (phone test)
 | Model | Macro-F1 (mean ± std over folds) |
 |---|---|
 | Majority class (always "lying") | 0.05 (accuracy 0.19) |
-| Logistic regression, **random window split** (wrong, leaky) | 0.985 ± 0.006 |
+| Logistic regression, **random window split** (wrong, leaky) | 0.985 ± 0.007 |
 | Physics baseline: logistic regression on 4 numbers (mean gravity x, y, z; motion), person split | 0.821 ± 0.069 |
 | Logistic regression, random split with overlapping neighbours removed (people still shared) | 0.977 ± 0.006 |
 | Logistic regression, **person split** (correct), default C = 1 | 0.933 ± 0.036 |
