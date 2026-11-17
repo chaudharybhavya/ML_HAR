@@ -127,18 +127,18 @@ These are cross-validation scores used for *choosing*. They are slightly optimis
 - Removing overlapping neighbours recovers only 0.008 of that 0.052 gap, so **about 85% of the inflation comes from having seen the same people**, not from the window overlap.
 - A 4-number physics baseline scores 0.821, so the 561 engineered features are worth roughly +0.11 macro-F1 on new people.
 
+## What Part 2 found (the features and PCA)
+- The 561 features are families of a few ideas (movement size, rhythm/frequency, orientation), repeated over 3 axes, 2 sensors, and time vs frequency. Only 53 describe gravity (orientation).
+- They overlap heavily: 8,206 pairs with |r| > 0.9 (207 with |r| > 0.99), and 431 features have a near-copy. Some are exact copies (e.g. the `tGravityAccMag` columns equal the `tBodyAccMag` ones).
+- PCA (scaler + PCA in a pipeline): 63 / 102 / 179 components keep 90 / 95 / 99% of the variance. PC1 (51%) is movement intensity and almost separates moving from still; lying only separates on PC4/PC5 (gravity); sitting vs standing and the three walking types overlap.
+- Logistic regression on 100 components scores 0.920 vs 0.933 with all 561 features, so we do not use PCA in front of the models: it keeps the largest variation, not the most useful.
+
 ## What Part 4 found (logistic regression)
 - The model gives each activity a linear score from the 561 features; softmax turns the 6 scores into probabilities. We reproduced its output by hand.
 - Regularisation strength (C) barely matters: every C from 0.01 to 100 scores within noise of the best. Differences *between people* (fold scores 0.885–0.981) are much bigger than differences between settings.
 - Lasso reaches the same score with about a third of the features, but the features it keeps change from fold to fold (many features are near-copies), so we do not treat its choices as "the important features".
 - The model's confidence is informative but not fully trustworthy: about 1 in 5 of its mistakes happen at more than 90% confidence.
 - **Candidate carried to Part 7: lasso, C = 0.1.**
-
-## What Part 2 found (the features and PCA)
-- The 561 features are families of a few ideas (movement size, rhythm/frequency, orientation), repeated over 3 axes, 2 sensors, and time vs frequency. Only 53 describe gravity (orientation).
-- They overlap heavily: 8,206 pairs with |r| > 0.9 (207 with |r| > 0.99), and 431 features have a near-copy. Some are exact copies (e.g. the `tGravityAccMag` columns equal the `tBodyAccMag` ones).
-- PCA (scaler + PCA in a pipeline): 63 / 102 / 179 components keep 90 / 95 / 99% of the variance. PC1 (51%) is movement intensity and almost separates moving from still; lying only separates on PC4/PC5 (gravity); sitting vs standing and the three walking types overlap.
-- Logistic regression on 100 components scores 0.920 vs 0.933 with all 561 features, so we do not use PCA in front of the models: it keeps the largest variation, not the most useful.
 
 ## What Parts 5 and 6 found (SVM, random forest)
 - **SVM:** gamma matters far more than C. Too large (0.1) and the model collapses to 0.06 (every window looks unlike every other). 11 of 25 settings are within one SE of the best (C = 10, gamma = 0.001: 0.938); the simplest is C = 1, gamma = 0.001 (0.931). It ties with lasso (better on 2 of 7 folds) and varies a little less between people.
