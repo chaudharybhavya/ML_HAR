@@ -557,6 +557,8 @@ table.wide td:first-child{font-weight:600}
   <ol>
     <li><strong>Who it learned from:</strong> 21 adults doing scripted activities in a lab with one phone model at one position. Other placements, phones, ages and free-living behaviour are untested here, apart from our one-person phone test (section 10).</li>
     <li><strong>Unfamiliar postures fail confidently.</strong> The model only knows postures like its training people's.</li>
+        <li><strong>Person and phone placement are confounded.</strong> Each volunteer wore the phone at their own exact position on the waist, so we cannot separate "this person sits unusually" from "this person's phone sat at a slightly different angle". Person 10's sitting windows fall outside every other person's gravity cloud, and we cannot tell which of the two causes it.</li>
+    <li><strong>Balanced by design, not by life.</strong> The six activities are near-equally represented because the lab protocol made them so. In real use sitting and lying dominate and stair-climbing is rare, so the model's probabilities would be miscalibrated, and macro-F1 — which weights all six activities equally — would not be the metric an application should optimise.</li>
     <li><strong>Few people.</strong> 9 test people give a wide interval (0.906–0.975), and individuals range from 0.83 to 1.00.</li>
     <li><strong>Correlated errors.</strong> Windows within a bout and a person are not independent evidence.</li>
     <li><strong>One window at a time.</strong> Activities last many windows; smoothing predictions over time could fix isolated errors. It is not part of the final model and was only tried as context on our phone recordings (a vote over the last 5 windows: 0.860 → 0.886).</li>

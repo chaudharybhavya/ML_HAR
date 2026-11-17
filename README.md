@@ -164,11 +164,13 @@ These are cross-validation scores used for *choosing*. They are slightly optimis
 ## Limitations
 1. **Who the model learned from:** 21 adults doing scripted activities in a lab, one phone model at one position. Other placements, phones, ages and free-living behaviour are untested (apart from our own recordings).
 2. **Unfamiliar postures fail confidently:** the model only knows postures like its training people's.
-3. **Few people:** 9 test people give a wide interval (0.906–0.975); individuals range from 0.83 to 1.00.
-4. **Correlated errors:** windows within a bout and a person are not independent evidence.
-5. **One window at a time:** smoothing predictions over consecutive windows is not part of the final model; it was only tried as context on our phone recordings (Part 10: a vote over the last 5 windows raised macro-F1 from 0.860 to 0.886).
-6. **No transitions** (e.g. standing up) in the six classes.
-7. **Prediction, not explanation:** feature choices and importances are unstable among correlated features, so we make no causal claims.
+3. **Person and phone placement are confounded.** Each volunteer wore the phone at their own exact position on the waist, so we cannot separate "this person sits unusually" from "this person's phone sat at a slightly different angle". Person 10's sitting windows fall outside every other person's gravity cloud, and we cannot tell which of the two causes it.
+4. **Balanced by design, not by life.** The six activities are near-equally represented because the lab protocol made them so. In real use sitting and lying dominate and stair-climbing is rare, so the model's probabilities would be miscalibrated, and macro-F1 — which weights all six activities equally — would not be the metric an application should optimise.
+5. **Few people:** 9 test people give a wide interval (0.906–0.975); individuals range from 0.83 to 1.00.
+6. **Correlated errors:** windows within a bout and a person are not independent evidence.
+7. **One window at a time:** smoothing predictions over consecutive windows is not part of the final model; it was only tried as context on our phone recordings (Part 10: a vote over the last 5 windows raised macro-F1 from 0.860 to 0.886).
+8. **No transitions** (e.g. standing up) in the six classes.
+9. **Prediction, not explanation:** feature choices and importances are unstable among correlated features, so we make no causal claims.
 
 ## Our phone recordings (Parts 9–10)
 - **Pipeline (Part 9):** resample to 50 Hz, convert to g and rad/s, align the axes if needed (not needed for our recordings), separate gravity with a 0.3 Hz filter, cut 2.56 s windows with 50% overlap, compute the features. Checked on UCI's own training signals, it reproduces 451 of the 561 features; logistic regression on those 451 scores 0.931 (vs 0.933 on all 561).
