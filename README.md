@@ -114,6 +114,19 @@ All ± values are the sample standard deviation over the 7 folds; the standard e
 
 These are cross-validation scores used for *choosing*. They are slightly optimistic. The honest number is the single final test on the 9 test people (above).
 
+## What Part 1 found (signals, physics, data audit)
+- An accelerometer measures gravity plus body motion together; the dataset's authors separate them with a 0.3 Hz low-pass filter. The gravity direction gives posture, the wiggles give movement.
+- Two numbers per window (mean gravity on x, and how much the body accelerates) already separate lying from everything else, and moving from still. Sitting vs standing, and the three walking types, overlap — which is exactly where the final model's errors turn out to be.
+- Quality: no missing values, no duplicate rows, all features inside [−1, 1]; classes balanced (13.4–19.1% of training windows); 281–409 windows per person, and at least 36 for every person and activity.
+- **95.5% of consecutive same-activity windows (6,752 of 7,072) share 64 identical readings.** This is what makes a random split leak, and it set the whole evaluation design.
+
+## What Part 3 found (evaluation design)
+- All splits are by person: `GroupKFold` with 7 folds of 3 people, saved to `results/folds.csv` so every model is scored on exactly the same people.
+- Metric: macro-F1, because a model that always answers "lying" reaches 0.19 accuracy but only 0.05 macro-F1.
+- The same model scores **0.985 on a random window split and 0.933 when whole people are held out**, and the spread between folds is five times wider (±0.036 vs ±0.007) — so a random split also hides how much results vary from person to person.
+- Removing overlapping neighbours recovers only 0.008 of that 0.052 gap, so **about 85% of the inflation comes from having seen the same people**, not from the window overlap.
+- A 4-number physics baseline scores 0.821, so the 561 engineered features are worth roughly +0.11 macro-F1 on new people.
+
 ## What Part 4 found (logistic regression)
 - The model gives each activity a linear score from the 561 features; softmax turns the 6 scores into probabilities. We reproduced its output by hand.
 - Regularisation strength (C) barely matters: every C from 0.01 to 100 scores within noise of the best. Differences *between people* (fold scores 0.885–0.981) are much bigger than differences between settings.
@@ -172,11 +185,6 @@ These are cross-validation scores used for *choosing*. They are slightly optimis
   - Context only: a majority vote over the last 5 windows raises macro-F1 to 0.886 (not part of the final model).
   - **Caveat:** one person, one phone, one session, so no interval; it shows that the model transfers and how it fails, not how well it works for people in general.
 
-## Key data facts (from Parts 1 and 3)
-- No missing values, no duplicate rows; all features are scaled to [-1, 1].
-- Classes are fairly balanced (13.4–19.1% of the training windows each); 281–409 windows per person.
-- Gravity direction separates lying clearly; sitting vs standing overlap; the three walking types overlap.
-- Folds: 7 folds × 3 people each; no person appears on both sides.
 
 ## Status
 All ten notebooks, the results files and the website are complete. The website presents the full reasoning (question, data, preprocessing, baseline and models, evaluation, results and error analysis, limitations, conclusions); this repository holds the code, the exact split (`results/folds.csv`) and every saved result needed to check it.
