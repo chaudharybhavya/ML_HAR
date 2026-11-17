@@ -1,4 +1,5 @@
-# Recognising everyday activities from a waist-worn phone
+# Recognising Physical Activities for Unseen People
+*Recognising everyday activities from a waist-worn phone, for people the model has never seen.*
 
 **ES 335 course project (IIT Gandhinagar)**
 - Bhavya Chaudhary (25110075): Person A
@@ -32,6 +33,12 @@ pip install -r requirements.txt
 ```
 Then open the notebooks in order in VS Code (Jupyter), and run each with **Restart & Run All**.
 
+To rebuild the website's data files from the saved results (run from the repository root):
+```
+python docs/make_data.py          # docs/data.js  (cross-validation, final test, errors, leakage splits, physics baseline)
+python docs/make_phone_data.py    # docs/phone.js (phone test)
+```
+
 `config.py` holds the shared settings: `SEED = 42` and the data path.
 
 **Slow cells:** the lasso cells in `04_logistic.ipynb` use the `saga` solver and take about 25 minutes on a laptop CPU (the laptop will get warm; that is normal). Everything else takes seconds to a few minutes. No GPU is needed.
@@ -43,7 +50,7 @@ Then open the notebooks in order in VS Code (Jupyter), and run each with **Resta
 |---|---|---|---|
 | `01_signals.ipynb` | Raw signals, physics (gravity vs motion), data-quality checks | A | done |
 | `02_features_pca.ipynb` | The 561 features, correlation, PCA | B | done |
-| `03_evaluation.ipynb` | Person-wise folds, majority baseline, leakage experiment | A | done |
+| `03_evaluation.ipynb` | Person-wise folds, majority and physics baselines, leakage experiment (random / neighbours removed / person) | A | done |
 | `04_logistic.ipynb` | Logistic regression: how it predicts, tuning C, ridge vs lasso | A | done |
 | `05_svm.ipynb` | RBF SVM, tuning C and gamma | B | done |
 | `06_random_forest.ipynb` | Random forest, feature importance | B | done |
@@ -52,6 +59,7 @@ Then open the notebooks in order in VS Code (Jupyter), and run each with **Resta
 | `09_phone_pipeline.ipynb` | Turning our own phone recordings into windows and features | B | done |
 | `10_phone_test.ipynb` | Testing the final model on our own phone recordings | B | done |
 | `results/folds.csv` | The saved person → fold table (used by every model) | A | done |
+| `results/extra_experiments.csv` | Fold scores (macro-F1, accuracy) for the three leakage splits and the physics baseline (Part 3, Cell 6) | A | done |
 | `results/cv_logistic.csv` | Fold scores for all logistic regression settings (63 rows) | A | done |
 | `results/cv_svm.csv` | Fold scores for all SVM settings | B | done |
 | `results/cv_forest.csv` | Fold scores for all random forest settings | B | done |
@@ -60,7 +68,7 @@ Then open the notebooks in order in VS Code (Jupyter), and run each with **Resta
 | `data/phone/bhavya/` | Our phone recordings of all 6 activities (see below) | A | done |
 | `results/phone_features_bhavya.csv` | Phone windows (270) with gravity and the 451 reproduced features, on UCI's scale | B | done |
 | `results/phone_predictions_bhavya.csv` | Final model's probabilities and predictions for every phone window | B | done |
-| `docs/` | The interactive website, live at https://chaudharybhavya.github.io/ML_HAR/ (GitHub Pages; built from `results/`, phone data by `docs/make_phone_data.py`) | both | done |
+| `docs/` | The interactive website, live at https://chaudharybhavya.github.io/ML_HAR/ (GitHub Pages; data rebuilt from `results/` by `docs/make_data.py` and `docs/make_phone_data.py`) | both | done |
 
 ## Work split
 - **Person A (Bhavya):** Parts 1, 3, 4, 7, 8, plus the website sections for them.
@@ -90,7 +98,9 @@ Then open the notebooks in order in VS Code (Jupyter), and run each with **Resta
 |---|---|
 | Majority class (always "lying") | 0.05 (accuracy 0.19) |
 | Logistic regression, **random window split** (wrong, leaky) | 0.985 ± 0.006 |
-| Logistic regression, **person split** (correct), default C = 1 | 0.933 ± 0.033 |
+| Physics baseline: logistic regression on 4 numbers (mean gravity x, y, z; motion), person split | 0.821 ± 0.069 |
+| Logistic regression, random split with overlapping neighbours removed (people still shared) | 0.977 ± 0.006 |
+| Logistic regression, **person split** (correct), default C = 1 | 0.933 ± 0.036 |
 | Logistic regression, ridge, C = 0.01 (one-SE choice) | 0.928 ± 0.039 |
 | **Logistic regression, lasso, C = 0.1 (one-SE choice, ~180 of 561 features)** | **0.934 ± 0.036** |
 | RBF SVM, C = 1, gamma = 0.001 (one-SE choice) | 0.931 ± 0.027 |
@@ -98,7 +108,9 @@ Then open the notebooks in order in VS Code (Jupyter), and run each with **Resta
 
 **Final test (Part 7):** lasso logistic regression, C = 0.1, trained on all 21 training people and tested once on the 9 test people: **macro-F1 0.945** (accuracy 0.946), **95% bootstrap interval over people 0.906–0.975**.
 
-The random split hides most of the errors on new people (about 1.5% vs 6.7% error), because neighbouring windows overlap by 50% (95.5% of same-bout pairs share readings exactly) and the same people appear on both sides.
+The random split hides most of the drop on new people, because neighbouring windows overlap by 50% (95.5% of same-bout pairs share readings exactly) and the same people appear on both sides. Part 3, Cell 6 separates the two causes by removing overlapping neighbours from training, and reports accuracy for each split.
+
+All ± values are the sample standard deviation over the 7 folds; the standard error used for choosing is that ÷ √7.
 
 These are cross-validation scores used for *choosing*. They are slightly optimistic. The honest number is the single final test on the 9 test people (above).
 
@@ -160,7 +172,7 @@ These are cross-validation scores used for *choosing*. They are slightly optimis
   - Context only: a majority vote over the last 5 windows raises macro-F1 to 0.886 (not part of the final model).
   - **Caveat:** one person, one phone, one session, so no interval; it shows that the model transfers and how it fails, not how well it works for people in general.
 
-## Key data facts (from Modules 1 and 3)
+## Key data facts (from Parts 1 and 3)
 - No missing values, no duplicate rows; all features are scaled to [-1, 1].
 - Classes are fairly balanced (13.4–19.1% of the training windows each); 281–409 windows per person.
 - Gravity direction separates lying clearly; sitting vs standing overlap; the three walking types overlap.
@@ -170,20 +182,19 @@ These are cross-validation scores used for *choosing*. They are slightly optimis
 All ten notebooks, the results files and the website are complete. The website presents the full reasoning (question, data, preprocessing, baseline and models, evaluation, results and error analysis, limitations, conclusions); this repository holds the code, the exact split (`results/folds.csv`) and every saved result needed to check it.
 
 ## AI assistance (disclosure)
-We used Claude (Anthropic) as a tutor and assistant. For Bhavya's parts, it:
+We used Claude (Anthropic) as a tutor and assistant, for both of our parts. It:
 - explained concepts, the physics of the data, and how each method works;
-- interpreted outputs with us and helped with debugging.
+- interpreted outputs with us and helped with debugging;
+- drafted parts of this README and of the notebook summaries;
+- built the structure and interactive charts of the website from our saved results, and the scripts that rebuild its data (`docs/make_data.py`, `docs/make_phone_data.py`);
 
-For Lakshika's parts, it:
-- explained concepts and how each method works;
-- helped with debugging;
-
-We are responsible for all results and can explain every step.
+We checked the reported numbers against our notebooks, and we are responsible for all results and can explain every step.
 
 ## References and citations
 - **Dataset:** Anguita, D., Ghio, A., Oneto, L., Parra, X. and Reyes-Ortiz, J. L. (2013). A public domain dataset for human activity recognition using smartphones. *ESANN 2013*. UCI Machine Learning Repository, https://archive.ics.uci.edu/dataset/240/human+activity+recognition+using+smartphones (CC BY 4.0). The descriptions of the authors' preprocessing (noise filter, 0.3 Hz gravity filter, 2.56 s windows with 50% overlap, feature definitions) come from the dataset's own `README.txt` and `features_info.txt`.
 - **Software:** Pedregosa, F. et al. (2011). Scikit-learn: machine learning in Python. *JMLR*, 12, 2825–2830. Also NumPy, pandas, SciPy and matplotlib (versions in `requirements.txt`).
 - **Phone recording app:** Staacks, S., Hütz, S., Heinke, H. and Stampfer, C. (2018). Advanced tools for smartphone-based experiments: phyphox. *Physics Education*, 53(4), 045009.
+- **Evaluation design:** Saeb, S., Lonini, L., Jayaraman, A., Mohr, D. C. and Kording, K. P. (2017). The need to approximate the use-case in clinical machine learning. *GigaScience*, 6(5), 1–9. https://doi.org/10.1093/gigascience/gix019 (record-wise vs subject-wise cross-validation).
 - **Methods:**
   - Tibshirani, R. (1996). Regression shrinkage and selection via the lasso. *JRSS B*, 58(1), 267–288.
   - Cortes, C. and Vapnik, V. (1995). Support-vector networks. *Machine Learning*, 20(3), 273–297.
