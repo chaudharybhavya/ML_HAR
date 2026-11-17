@@ -1,0 +1,936 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Activity Recognition from a Phone</title>
+<meta name="description" content="ES 335 project: recognising six everyday activities of new people from a waist-worn phone, evaluated person by person.">
+<style>
+:root{
+  --bg:#fbfaf7; --surface:#ffffff; --ink:#1d1f23; --muted:#5d636d; --line:#e3e1db;
+  --accent:#2f5d8a; --accent-soft:#e6eef6; --warn:#b4462d; --warn-soft:#f7e4de; --good:#2e7d4f;
+  --c1:#2f5d8a; --c2:#c47a1c; --c3:#5b8c5a; --shadow:0 1px 2px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15171a; --surface:#1d2024; --ink:#e8e6e1; --muted:#a3a8b0; --line:#30343a;
+    --accent:#7fb0e0; --accent-soft:#22313f; --warn:#ef8a6f; --warn-soft:#3a2520; --good:#6fc28f;
+    --c1:#7fb0e0; --c2:#e3a552; --c3:#8cc08a; --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15171a; --surface:#1d2024; --ink:#e8e6e1; --muted:#a3a8b0; --line:#30343a;
+  --accent:#7fb0e0; --accent-soft:#22313f; --warn:#ef8a6f; --warn-soft:#3a2520; --good:#6fc28f;
+  --c1:#7fb0e0; --c2:#e3a552; --c3:#8cc08a; --shadow:none;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:64px}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+a{color:var(--accent)}
+nav{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+nav .in{max-width:1080px;margin:0 auto;padding:0 16px;display:flex;gap:4px;overflow-x:auto;white-space:nowrap;scrollbar-width:none}
+nav a{display:inline-block;padding:14px 10px;font-size:14px;color:var(--muted);text-decoration:none;border-bottom:2px solid transparent}
+nav a:hover,nav a.on{color:var(--ink);border-bottom-color:var(--accent)}
+main{max-width:1080px;margin:0 auto;padding:0 16px 80px}
+header.hero{padding:56px 0 24px}
+.kicker{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+h1{font-size:clamp(28px,4.4vw,44px);line-height:1.15;margin:0 0 16px;letter-spacing:-.01em;max-width:820px}
+h2{font-size:clamp(22px,3vw,30px);line-height:1.2;margin:0 0 8px;letter-spacing:-.005em}
+h3{font-size:18px;margin:28px 0 8px}
+.lead{font-size:18px;color:var(--muted);max-width:760px;margin:0 0 24px}
+section{padding:56px 0 8px;border-top:1px solid var(--line)}
+section > p, section > ul, section > ol, .prose{max-width:760px}
+.owner{display:inline-block;font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 10px;margin-bottom:12px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:24px 0}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow)}
+.tile .n{font-size:32px;font-weight:650;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.tile .l{font-size:14px;color:var(--muted)}
+.tile.hl{border-color:var(--accent);background:var(--accent-soft)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;margin:20px 0;box-shadow:var(--shadow)}
+.card h3{margin-top:0}
+.try{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;align-items:start}
+figure{margin:20px 0}
+figure img{width:100%;height:auto;border-radius:10px;border:1px solid var(--line);background:#fff}
+figcaption{font-size:14px;color:var(--muted);margin-top:6px}
+table{border-collapse:collapse;width:100%;font-size:15px;font-variant-numeric:tabular-nums}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:13px}
+.tablewrap{overflow-x:auto;max-width:100%}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;flex-wrap:wrap}
+.seg button{font:inherit;font-size:14px;padding:8px 14px;border:0;background:var(--surface);color:var(--ink);cursor:pointer;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--accent);color:#fff}
+:root[data-theme="dark"] .seg button.on{color:#0f1215}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .seg button.on{color:#0f1215}}
+select{font:inherit;font-size:14px;padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.row{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin:12px 0}
+.big{font-size:44px;font-weight:650;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+.callout{border-left:3px solid var(--accent);padding:4px 0 4px 14px;margin:16px 0;max-width:760px}
+.callout.warn{border-color:var(--warn)}
+svg{display:block;max-width:100%}
+svg text{fill:var(--muted);font-size:12px;font-family:inherit}
+.wgrid{display:grid;grid-template-columns:repeat(50,1fr);gap:2px;max-width:520px}
+.wgrid i{display:block;aspect-ratio:1;border-radius:2px;background:var(--accent-soft)}
+.wgrid i.e{background:var(--warn)}
+.cm td{text-align:center;min-width:52px;cursor:pointer;border:1px solid var(--line);font-weight:600}
+.cm th{text-align:center}
+.cm td.sel{outline:3px solid var(--warn);outline-offset:-3px}
+input[type=range]{width:100%;max-width:520px;accent-color:var(--accent)}
+.meter{height:10px;border-radius:5px;background:var(--line);overflow:hidden;max-width:520px}
+.meter b{display:block;height:100%;background:var(--accent)}
+.stat3{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:16px 0}
+.stat3 div{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px}
+.stat3 .n{font-size:26px;font-weight:650;font-variant-numeric:tabular-nums}
+.legend{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.legend button{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:4px 12px;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.legend button.off{opacity:.4}
+.legend .sw{width:10px;height:10px;border-radius:50%}
+.themebtn{margin-left:auto;font:inherit;font-size:13px;border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:8px;padding:4px 10px;cursor:pointer;align-self:center}
+footer{max-width:1080px;margin:0 auto;padding:32px 16px 48px;color:var(--muted);font-size:14px;border-top:1px solid var(--line)}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+main{counter-reset:fig}
+figure figcaption::before{counter-increment:fig;content:"Figure " counter(fig) ". ";font-weight:600;color:var(--ink)}
+.results td:last-child,.results th:last-child{text-align:right;white-space:nowrap}
+.results tr.key td{font-weight:650}
+.results td.note{color:var(--muted);font-size:14px}
+.pipe{list-style:none;padding:0;margin:20px 0;display:flex;flex-wrap:wrap;gap:8px 0;max-width:none;counter-reset:step}
+.pipe li{display:flex;align-items:stretch;flex:1 1 0;min-width:0}
+.pipe li .box{flex:1;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;box-shadow:var(--shadow)}
+.pipe li .box b{display:block;font-size:14px}
+.pipe li .box b::before{counter-increment:step;content:counter(step) ". ";color:var(--accent)}
+.pipe li .box span{display:block;font-size:13px;color:var(--muted);line-height:1.4;margin-top:2px}
+.pipe li:not(:last-child)::after{content:"→";align-self:center;color:var(--muted);padding:0 8px}
+.keyval th{width:170px}
+.refs{padding-left:22px;max-width:860px}
+.refs li{margin:8px 0;font-size:15px}
+.chartlegend{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin:6px 0 2px}
+.chartlegend span{display:inline-flex;align-items:center;gap:6px}
+.chartlegend i{display:inline-block;width:12px;height:12px;border-radius:3px}
+@media (max-width:520px){.results td.note,.results th:nth-child(2){display:none}}
+@media (max-width:760px){.pipe{gap:8px}.pipe li:not(:last-child)::after{content:none}.pipe li{flex:1 1 40%}}
+.more{font-size:14px;color:var(--muted);margin:16px 0 0;max-width:760px}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 8px}
+.btn{display:inline-block;font-size:14px;font-weight:600;text-decoration:none;border:1px solid var(--accent);border-radius:8px;padding:7px 14px;color:var(--accent);background:var(--surface)}
+.btn.primary{background:var(--accent);color:#fff}
+:root[data-theme="dark"] .btn.primary{color:#0f1215}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn.primary{color:#0f1215}}
+.chain{max-width:760px;padding-left:22px}
+.chain li{margin:6px 0}
+table.wide{min-width:680px}
+table.wide td:first-child{font-weight:600}
+.formula{display:block;max-width:760px;overflow-x:auto;white-space:nowrap;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14px;background:var(--accent-soft);padding:10px 14px;border-radius:8px;margin:10px 0}
+.who h3{margin:0 0 4px}
+.who dl{margin:0}
+.who dt{font-size:13px;font-weight:600;color:var(--muted);margin-top:12px}
+.who dd{margin:2px 0 0;font-size:15px}
+.tag{display:inline-block;font-size:12px;border-radius:999px;padding:1px 9px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.tag.ran{border-color:var(--good);color:var(--good)}
+</style>
+</head>
+<body>
+<nav><div class="in" id="navin">
+  <a href="#overview">Overview</a><a href="#problem">Problem</a><a href="#data">Data</a><a href="#features">Features</a><a href="#prep">Preprocessing</a>
+  <a href="#evaluation">Evaluation</a><a href="#models">Models</a><a href="#selection">Selection</a><a href="#test">Final test</a>
+  <a href="#errors">Errors</a><a href="#phone">Phone test</a><a href="#whatif">What if</a><a href="#limits">Limitations</a><a href="#conclusions">Conclusions</a><a href="#repro">Reproduce</a><a href="#refs">References</a>
+  <button class="themebtn" id="themebtn" aria-label="Toggle colour theme">◐</button>
+</div></nav>
+
+<main>
+<header class="hero" id="overview">
+  <p class="kicker">ES 335 · Machine learning project · IIT Gandhinagar</p>
+  <h1>Can a phone on your waist tell what you are doing, even if it has never seen you before?</h1>
+  <p class="lead">We classify 2.56-second windows of accelerometer and gyroscope readings into six everyday activities, and judge every model on <strong>people it was not trained on</strong>. Bhavya Chaudhary (25110075) and Lakshika Aswal (25110179).</p>
+  <div class="btnrow">
+    <a class="btn primary" href="https://github.com/chaudharybhavya/ML_HAR">Code, notebooks and results on GitHub</a>
+    <a class="btn" href="#conclusions">Jump to the conclusions</a>
+  </div>
+  <div class="tiles">
+    <div class="tile hl"><div class="n">0.945</div><div class="l">macro-F1 on 9 unseen test people<br>(95% interval 0.906–0.975)</div></div>
+    <div class="tile"><div class="n">0.821</div><div class="l">physics baseline: 4 numbers per window, unseen people<br>(always saying “lying”: 0.05)</div></div>
+    <div class="tile"><div class="n">0.985</div><div class="l">what a <em>leaky</em> random split would have claimed</div></div>
+    <div class="tile"><div class="n">0.83–1.00</div><div class="l">range of scores between individual test people</div></div>
+    <div class="tile"><div class="n">0.860</div><div class="l">macro-F1 on our own phone<br>(blind test, one person)</div></div>
+  </div>
+  <p class="prose"><strong>In short:</strong> a regularised linear model (lasso logistic regression) recognises the six activities of new people about 95% of the time, against 0.821 macro-F1 for a baseline that uses only the direction of gravity and the amount of movement. It never confuses moving with being still and never misses lying down. Its remaining mistakes are fine distinctions (sitting vs standing, walking vs stairs), and they are concentrated in a few people whose postures or gait differ from the people it learned from. On a different phone, worn by one of us, it scores 0.860: the same two confusions grow, and for sitting vs standing we can trace the reason to how the phone was tilted. Testing on windows from people the model has already seen would have hidden most of these mistakes, and that comes mainly from sharing people, not from the overlap between windows.</p>
+  <h3>Results at a glance</h3>
+  <div class="tablewrap" style="max-width:760px"><table class="results">
+    <tr><th>What</th><th>Evaluated on</th><th>Macro-F1</th></tr>
+    <tr><td>Majority class (always “lying”)</td><td class="note">21 training people, 7 person-wise folds</td><td>0.05</td></tr>
+    <tr><td>Physics baseline: logistic regression on 4 numbers (gravity x, y, z; motion)</td><td class="note">21 training people, 7 person-wise folds</td><td><span data-ex="physics_baseline.macro_f1">…</span> ± <span data-ex="physics_baseline.f1_std">…</span></td></tr>
+    <tr><td>Logistic regression, random window split (leaky)</td><td class="note">windows, people on both sides</td><td><span data-ex="random_split.macro_f1">…</span> ± <span data-ex="random_split.f1_std">…</span></td></tr>
+    <tr><td>Logistic regression, random split with overlapping neighbours removed</td><td class="note">windows, people still on both sides</td><td><span data-ex="random_split_neighbours_removed.macro_f1">…</span> ± <span data-ex="random_split_neighbours_removed.f1_std">…</span></td></tr>
+    <tr><td>Lasso logistic regression, C = 0.1</td><td class="note">21 training people, 7 person-wise folds</td><td>0.934 ± 0.036</td></tr>
+    <tr><td>RBF SVM, C = 1, γ = 0.001</td><td class="note">21 training people, 7 person-wise folds</td><td>0.931 ± 0.027</td></tr>
+    <tr><td>Random forest, 100 trees, depth 10</td><td class="note">21 training people, 7 person-wise folds</td><td>0.907 ± 0.041</td></tr>
+    <tr class="key"><td>Final model (lasso), tested once</td><td class="note">9 unseen test people (95% interval over people)</td><td>0.945 (0.906–0.975)</td></tr>
+    <tr class="key"><td>Final model, 451 phone-compatible features</td><td class="note">our own phone, one person, blind</td><td>0.860</td></tr>
+  </table></div>
+  <p class="small muted">Cross-validation rows: mean ± standard deviation over the 7 folds.</p>
+  <h3>How this page reasons, from the question to the conclusions</h3>
+  <ol class="chain">
+    <li><a href="#problem">The question</a> is about <em>new</em> people, so the person, not the window, is the unit we must generalise over.</li>
+    <li><a href="#data">The data</a> has overlapping windows and people who move differently, so a random split would leak. The <a href="#features">561 features</a> are highly redundant.</li>
+    <li><a href="#prep">Preprocessing</a> is deliberately small: standardisation only, learned from the training people of each fold.</li>
+    <li><a href="#evaluation">Evaluation</a> uses 7 person-wise folds for every choice, keeps 9 test people for one final test, and scores with macro-F1.</li>
+    <li><a href="#models">Models</a>: a majority-class baseline and a 4-number physics baseline, then logistic regression, an RBF SVM and a random forest, all tuned on the same folds.</li>
+    <li><a href="#selection">The final model</a> is chosen by a rule fixed in advance (the simplest model within one standard error of the best), before the test set is opened.</li>
+    <li><a href="#test">One final test</a> gives the score and an interval over people; the <a href="#errors">error analysis</a> shows where, for whom and why it fails.</li>
+    <li>A <a href="#phone">blind test on our own phone</a>, a table of <a href="#whatif">what changes the result</a>, the <a href="#limits">limitations</a>, and the <a href="#conclusions">conclusions</a>.</li>
+  </ol>
+</header>
+
+<section id="problem">
+  <h2>1. The problem</h2>
+  <span class="owner">Bhavya</span>
+  <div class="tablewrap"><table>
+    <tr><th>Question</th><td>Which of six activities (walking, walking upstairs, walking downstairs, sitting, standing, lying) is a <strong>new person</strong> doing, from the phone at their waist?</td></tr>
+    <tr><th>One row</th><td>One window of 2.56 s (128 readings at 50 Hz) from one person.</td></tr>
+    <tr><th>Target</th><td>The activity label of that window.</td></tr>
+    <tr><th>Prediction time</th><td>At the end of each window, using only that window's readings.</td></tr>
+    <tr><th>Unit of generalisation</th><td>The <strong>person</strong>. A useful app works for people it has never seen, so every evaluation holds out whole people.</td></tr>
+    <tr><th>Limits of the claim</th><td>Adults performing scripted activities in a lab, one phone model, one position (waist). We predict activities; we do not explain what causes them.</td></tr>
+  </table></div>
+  <p class="more">Details and code in the repository: <a href="https://github.com/chaudharybhavya/ML_HAR#readme">README</a> (overview, setup, how to run).</p>
+</section>
+
+<section id="data">
+  <h2>2. The data and the physics behind it</h2>
+  <span class="owner">Bhavya</span>
+  <p><strong>UCI Human Activity Recognition dataset</strong> (Anguita et al., 2013; licence CC BY 4.0). 30 volunteers wore a Samsung Galaxy S II on the waist. Recordings are cut into overlapping windows: <strong>7,352 training windows from 21 people</strong> and <strong>2,947 test windows from 9 people</strong>. Each window comes with 561 engineered features and with the raw signals (3-axis accelerometer in g, 3-axis gyroscope in rad/s). The data is public; we do not redistribute it (see <a href="#repro">Reproduce</a>).</p>
+  <p>The volunteers were 19–48 years old and followed a scripted protocol in a lab; the authors labelled the activities by hand from video. The authors also made the split into training and test <em>people</em> (a random 70% / 30% of the volunteers), and we kept it.</p>
+  <h3>Key variables</h3>
+  <div class="tablewrap"><table class="wide">
+    <tr><th>Variable</th><th>What it is</th><th>Type and units</th><th>How we use it</th></tr>
+    <tr><td>Activity label</td><td>Which of the six activities the window shows</td><td>Category, coded 1–6</td><td>The target</td></tr>
+    <tr><td>Person ID</td><td>Which of the 30 volunteers the window comes from</td><td>Integer 1–30</td><td><strong>Never a model input.</strong> Used only to split by person and to analyse errors per person</td></tr>
+    <tr><td>Raw signals</td><td>Total acceleration, body acceleration (gravity removed) and rotation speed, each on x, y, z: 9 channels</td><td>128 readings per channel per window; g and rad/s</td><td>Understanding the physics, the error analysis, and checking our phone pipeline</td></tr>
+    <tr><td>561 features</td><td>Summary statistics of each window: 265 in the time domain, 289 in the frequency domain, 7 angles (for example mean, standard deviation, energy, frequency-band energies, correlations between axes)</td><td>Numbers, pre-scaled by the authors to [−1, 1]</td><td>The model inputs</td></tr>
+    <tr><td>…of which gravity</td><td>53 features describe the gravity signal (the phone's orientation), plus the 7 angles; the other ~500 describe movement</td><td></td><td>They carry the posture information (sitting, standing, lying)</td></tr>
+  </table></div>
+  <p><strong>Training windows per activity:</strong> walking 1,226 (16.7%), upstairs 1,073 (14.6%), downstairs 986 (13.4%), sitting 1,286 (17.5%), standing 1,374 (18.7%), lying 1,407 (19.1%).</p>
+  <h3>What the accelerometer measures: gravity plus motion</h3>
+  <p>An accelerometer cannot tell gravity apart from movement; it measures their sum. The dataset authors separate them with a 0.3 Hz low-pass filter: the slow part is gravity (which way the phone points, so <em>posture</em>), and the fast part is body motion (<em>movement</em>).</p>
+  <div class="grid2">
+    <figure><img src="img/signal_gravity_body.png" alt="Walking window: total acceleration splits into a flat gravity line near 1 g and an oscillating body-motion signal" loading="lazy"><figcaption>One walking window: the measured signal (blue) = gravity (orange, steady around 1 g) + body motion (green, the steps).</figcaption></figure>
+    <figure><img src="img/four_postures.png" alt="Gravity on x, y and z for standing, sitting, lying and walking windows" loading="lazy"><figcaption>Standing, sitting and lying are flat lines at different heights: gravity points in a different direction for each posture. Walking adds large wiggles.</figcaption></figure>
+  </div>
+  <div class="grid2">
+    <figure><img src="img/gravity_vs_motion.png" alt="Scatter of mean x gravity against motion size for all training windows" loading="lazy"><figcaption>Two numbers per window already sort most of it: lying stands apart (gravity no longer along the phone's x axis), moving vs still separates on motion. Sitting vs standing, and the three walking types, overlap. A logistic regression on just these physics numbers (gravity x, y, z and motion) is our second baseline: macro-F1 <span data-ex="physics_baseline.macro_f1">…</span> on unseen people (section 6).</figcaption></figure>
+    <figure><img src="img/sit_stand_tilt.png" alt="Sitting and standing windows on gravity y versus z" loading="lazy"><figcaption>Sitting vs standing differ only by a small tilt, and people differ in how they sit, so the clouds only partly separate. This turns out to be the model's biggest weakness.</figcaption></figure>
+  </div>
+  <h3>Quality checks and issues (training people only)</h3>
+  <div class="tablewrap"><table class="wide">
+    <tr><th>What we checked</th><th>What we found</th><th>What it means for the project</th></tr>
+    <tr><td>Missing values, duplicate rows</td><td>None; all values inside [−1, 1]</td><td>No imputation and no rows removed</td></tr>
+    <tr><td>Class balance</td><td>13.4–19.1% per activity</td><td>No reweighting or resampling needed</td></tr>
+    <tr><td>Windows per person</td><td>281–409 per person, and at least 36 for every person and activity</td><td>Every fold contains every activity</td></tr>
+    <tr><td>Overlapping windows</td><td><strong>95.5% of consecutive same-activity windows (6,752 of 7,072) share 64 identical readings</strong></td><td>Neighbouring rows are near-copies, so a random split leaks. Together with differences between people, this shapes the whole evaluation design; section 5 measures which of the two leaks matters more (section 5)</td></tr>
+    <tr><td>Differences between people</td><td>The same activity looks different from person to person (for example the sitting tilt)</td><td>Scores vary by person, so we report per-person results and an interval over people</td></tr>
+    <tr><td>Redundant features</td><td>8,206 feature pairs with |r| &gt; 0.9; 431 of 561 features have a near-copy; a few are exact copies</td><td>Regularisation is needed, and no single feature can be called “important” (sections 3 and 6)</td></tr>
+    <tr><td>Feature names</td><td>Only 477 of the 561 names are unique (the frequency-band names repeat)</td><td>We refer to features by column number</td></tr>
+    <tr><td>Pre-scaled features</td><td>The authors scaled every feature to [−1, 1], most likely using all 30 people, test people included. That would be a leak of test information into the features</td><td>It has no effect on our results: the scaling is one straight line per feature (a × value + b, the same for every window), and our scaler, fitted on each fold's training people, undoes any such line exactly. Trees are unaffected too, because a straight line does not change which windows fall on each side of a threshold (section 4)</td></tr>
+    <tr><td>Scope</td><td>30 adults, scripted activities, one phone model, one position</td><td>Limits what the result can claim (section 12)</td></tr>
+  </table></div>
+  <figure style="max-width:560px"><img src="img/windows_per_person.png" alt="Heatmap of training windows per person and activity" loading="lazy"><figcaption>Every training person has every activity, with no tiny cells.</figcaption></figure>
+  <p class="more">Details and code in the repository: <a href="https://github.com/chaudharybhavya/ML_HAR/blob/main/01_signals.ipynb">01_signals.ipynb</a> (signals, physics and all checks above).</p>
+</section>
+
+<section id="features">
+  <h2>3. The 561 features and PCA</h2>
+  <span class="owner">Lakshika</span>
+  <p>The 561 features are a few ideas (how much the body moves, the rhythm and frequency of the movement, the orientation) repeated over 3 axes, 2 sensors, and time vs frequency domain. Only 53 describe gravity. They overlap heavily: <strong>8,206 pairs have |r| &gt; 0.9</strong> (207 above 0.99), and 431 features have a near-copy.</p>
+  <div class="grid2">
+    <figure><img src="img/feature_correlation.png" alt="Correlation matrix of the first 40 features" loading="lazy"><figcaption>Correlations among the first 40 features: large blocks of near-duplicates.</figcaption></figure>
+    <figure><img src="img/pca_variance.png" alt="Cumulative variance explained by principal components" loading="lazy"><figcaption>PCA (fitted inside a pipeline after standardising): 63 / 102 / 179 components keep 90 / 95 / 99% of the variance.</figcaption></figure>
+  </div>
+  <div class="grid2">
+    <figure><img src="img/pca_pc1_pc2.png" alt="Training windows on the first two principal components" loading="lazy"><figcaption>PC1 (51% of the variance) is movement intensity and nearly separates moving from still.</figcaption></figure>
+    <figure><img src="img/pca_pc4_pc5.png" alt="Still activities on principal components 4 and 5" loading="lazy"><figcaption>Lying separates only on PC4/PC5 (gravity). Sitting and standing still overlap.</figcaption></figure>
+  </div>
+  <p><strong>Decision:</strong> logistic regression on 100 components scores 0.920 vs 0.933 on all 561 features, so we do not put PCA in front of the models. PCA keeps the <em>largest</em> variation, which is not the same as the most <em>useful</em> variation.</p>
+  <p class="more">Details and code in the repository: <a href="https://github.com/chaudharybhavya/ML_HAR/blob/main/02_features_pca.ipynb">02_features_pca.ipynb</a>.</p>
+</section>
+
+<section id="prep">
+  <h2>4. Preprocessing: what was done to the data, and why</h2>
+  <span class="owner">Both</span>
+  <p>Some preprocessing was already applied by the dataset's authors, and we could only check it. The rest are our own choices. The rule behind all of them: <strong>anything that is <em>learned</em> from data (scaling, PCA, feature selection, model weights) is fitted on the training people of the fold only.</strong> Only <em>looking</em> (plots, counts, checks) used all 21 training people, and nothing used the 9 test people.</p>
+
+  <h3>Already done by the dataset's authors</h3>
+  <ol class="pipe" aria-label="Preprocessing by the dataset authors">
+    <li><div class="box"><b>Noise filter</b><span>median filter, then a 20 Hz low-pass filter</span></div></li>
+    <li><div class="box"><b>Gravity split</b><span>0.3 Hz low-pass = gravity; body = total − gravity</span></div></li>
+    <li><div class="box"><b>Windows</b><span>2.56 s (128 readings), 50% overlap</span></div></li>
+    <li><div class="box"><b>Features</b><span>561 statistics per window, time and frequency domain</span></div></li>
+    <li><div class="box"><b>Scaling</b><span>each feature to [−1, 1]</span></div></li>
+  </ol>
+  <p>We verified two of these steps on the raw signals. The 50% overlap: 95.5% of consecutive windows share half their readings (section 2). The gravity split: our own 0.3 Hz filter reproduces the dataset's gravity signal to within 0.002 g (section 10).</p>
+
+  <h3>Our choices</h3>
+  <div class="tablewrap"><table class="wide">
+    <tr><th>Step</th><th>What we did</th><th>Why</th></tr>
+    <tr><td>Cleaning</td><td>Nothing removed, nothing imputed</td><td>There are no missing values, no duplicate rows and no out-of-range values to fix</td></tr>
+    <tr><td>Standardisation</td><td>For logistic regression and the SVM, each feature is rescaled to mean 0 and standard deviation 1</td><td>A range of [−1, 1] does not mean equal spread. The ridge and lasso penalties treat all weights alike, which is only fair when features share a scale; the RBF kernel is built on distances; and the solvers converge faster</td></tr>
+    <tr><td>Where it is learned</td><td>The scaler and the model sit in one scikit-learn pipeline, so the means and standard deviations come from the <strong>training people of each fold</strong>. For the final model they come from the 21 training people and are then applied to the test people</td><td>Otherwise the validation or test people would influence the training (leakage)</td></tr>
+    <tr><td>The authors' [−1, 1] scaling</td><td>Kept, and checked that it cannot leak</td><td>If it used the test people, it is still harmless: standardising a × value + b gives exactly the standardised value, so after our scaler the model sees the same numbers whatever a and b were. Consistent with this, logistic regression on our own recomputed features (which never saw the test people) scores 0.931 vs 0.933 (section 10)</td></tr>
+    <tr><td>Random forest</td><td>No scaling</td><td>Trees split on thresholds, so rescaling a feature does not change any split</td></tr>
+    <tr><td>Dimensionality reduction</td><td>PCA was tried (inside the pipeline) and <strong>not used</strong></td><td>Logistic regression on 10 / 50 / 100 components scores 0.838 / 0.895 / 0.920, against 0.933 on all 561 features (section 3)</td></tr>
+    <tr><td>Feature selection</td><td>None by hand. Lasso does it inside the model, separately in each training fold</td><td>Choosing features from all training people and then cross-validating would let the validation people influence the choice. Lasso keeps about 180 features with no loss (section 6)</td></tr>
+    <tr><td>Person ID</td><td>Left out of the inputs</td><td>The model has to work for people it has never seen; the ID is used only for splitting</td></tr>
+    <tr><td>Class weights, resampling</td><td>None</td><td>The six activities are balanced (13.4–19.1%)</td></tr>
+    <tr><td>Training and test people</td><td>The authors' partition (21 and 9 people) is kept</td><td>The 9 test people stay untouched until the single final test</td></tr>
+    <tr><td>Our phone recordings</td><td>The authors' steps re-implemented: resample to 50 Hz, convert units, split gravity, cut windows, compute the features</td><td>A feature must mean the same thing on our phone as in the training data (section 10)</td></tr>
+  </table></div>
+  <p class="more">Details and code in the repository: the pipelines are built in <a href="https://github.com/chaudharybhavya/ML_HAR/blob/main/03_evaluation.ipynb">03_evaluation.ipynb</a> and <a href="https://github.com/chaudharybhavya/ML_HAR/blob/main/04_logistic.ipynb">04_logistic.ipynb</a>; PCA in <a href="https://github.com/chaudharybhavya/ML_HAR/blob/main/02_features_pca.ipynb">02_features_pca.ipynb</a>; the phone pipeline in <a href="https://github.com/chaudharybhavya/ML_HAR/blob/main/09_phone_pipeline.ipynb">09_phone_pipeline.ipynb</a>.</p>
+</section>
+
+<section id="evaluation">
+  <h2>5. Evaluation design: test on people, not on windows</h2>
+  <span class="owner">Bhavya</span>
+  <p>A random split of windows puts near-copies (overlapping neighbours) and the same people on both sides, so it measures “recognising people already seen”. This is a known trap in sensor and clinical studies: record-wise cross-validation can report much better accuracy than subject-wise cross-validation, and only the subject-wise version matches use on new people (Saeb et al., 2017). Our question is about <em>new</em> people, so we split <strong>by person</strong>: <code>GroupKFold</code> with 7 folds of 3 people each. Each model trains on 18 people and is scored on the other 3, seven times. The folds are saved to a file and every model uses the same ones, which makes comparisons fair. The 9 test people were kept out of all tuning and choosing.</p>
+  <h3>Which data answered which question</h3>
+  <div class="tablewrap"><table class="wide">
+    <tr><th>Data</th><th>People</th><th>Used for</th><th>How often</th></tr>
+    <tr><td>Training set, 7 person-wise folds</td><td>21</td><td>Tuning every model and choosing the final one</td><td>As often as needed</td></tr>
+    <tr><td>Test set</td><td>9 others</td><td>Reporting the final score and analysing its errors</td><td><strong>Once</strong>, after the choice was written down</td></tr>
+    <tr><td>Our own phone recordings</td><td>1 (one of us), different phone</td><td>A blind check outside the dataset</td><td>Once, after the model was fixed</td></tr>
+  </table></div>
+  <p><strong>Why 7 folds?</strong> 21 people divide evenly into 7 groups of 3, each model trains on 18 of the 21 people (close to the final model), and 7 fits per setting keep tuning affordable on a laptop.</p>
+  <h3>The folds</h3>
+  <div class="tablewrap"><table>
+    <tr><th>Fold</th><th>0</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th></tr>
+    <tr><th>Validation people</th><td>15, 22, 25</td><td>3, 8, 21</td><td>14, 26, 29</td><td>1, 6, 30</td><td>7, 19, 28</td><td>5, 16, 27</td><td>11, 17, 23</td></tr>
+  </table></div>
+  <h3>The metric: macro-F1</h3>
+  <p>For one activity, <strong>precision</strong> asks: of the windows the model called “sitting”, how many really were? <strong>Recall</strong> asks: of the windows that really were sitting, how many did the model find? F1 combines the two, and macro-F1 averages F1 over the six activities:</p>
+  <span class="formula">F1 = 2 × precision × recall / (precision + recall) &nbsp;&nbsp;&nbsp; macro-F1 = (F1<sub>walking</sub> + … + F1<sub>lying</sub>) / 6</span>
+  <p>Every activity counts equally, so a model cannot look good by ignoring a hard one. Accuracy can: a model that always says “lying” gets accuracy 0.19 but macro-F1 only 0.05. That is our first baseline; section 6 adds a physics baseline. We report accuracy next to macro-F1 for the final results.</p>
+  <h3>How we handle uncertainty</h3>
+  <ul>
+    <li><strong>When choosing:</strong> the 7 fold scores give a mean and a standard error (standard deviation ÷ √7). Settings or models closer than one standard error are treated as tied, and the simpler one wins (the one-standard-error rule, section 6).</li>
+    <li><strong>For the final score:</strong> a bootstrap that resamples the 9 test <em>people</em>, because a person's windows are not independent (section 8).</li>
+  </ul>
+  <h3>Why the split matters: the leakage experiment</h3>
+
+  <div class="card" id="splitcard">
+    <p class="try">Try it</p>
+    <h3>Same model, three ways of testing it</h3>
+    <div class="seg" role="tablist"><button data-s="random">Random window split</button><button data-s="purged">Random, neighbours removed</button><button data-s="person" class="on">Split by person</button></div>
+    <div class="row" style="margin-top:18px">
+      <div><div class="big" id="splitScore">0.933</div><div class="muted small">macro-F1 (mean of 7 folds)</div></div>
+      <div><div class="big" id="splitErr" style="color:var(--warn)">67</div><div class="muted small">windows misclassified per 1,000 (1 − accuracy)</div></div>
+      <div><div class="big" id="splitSpread">±0.033</div><div class="muted small">spread between folds</div></div>
+    </div>
+    <div class="wgrid" id="wgrid" aria-label="1,000 windows, errors in red"></div>
+    <p class="small muted" style="margin-top:6px">Each square is one window out of 1,000; red squares are misclassified windows (from the mean accuracy over the 7 folds).</p>
+    <div id="splitFolds"></div>
+    <p id="splitText" class="small"></p>
+  </div>
+  <p><strong>Which leak matters more?</strong> Removing the overlapping neighbours from training lowers the random-split score only from <span data-ex="random_split.macro_f1">…</span> to <span data-ex="random_split_neighbours_removed.macro_f1">…</span>, still far above <span data-ex="person_split.macro_f1">…</span> for new people. So most of the inflation comes from <em>seeing the same people</em>, not from the 50% overlap. Splitting by person is what matters; dropping neighbours alone would not make a random split honest. One caveat: removing neighbours also removes about a quarter of the training windows, so the small drop is, if anything, an upper bound on what the overlap is worth.</p>
+  <p class="more">Details and code in the repository: <a href="https://github.com/chaudharybhavya/ML_HAR/blob/main/03_evaluation.ipynb">03_evaluation.ipynb</a>; the saved split is <a href="https://github.com/chaudharybhavya/ML_HAR/blob/main/results/folds.csv">results/folds.csv</a>.</p>
+</section>
+
+<section id="models">
+  <h2>6. The baselines and the models we compared</h2>
+  <p>Three candidate models, from simple to flexible, each tuned with the same person-wise folds. Within each model we chose a setting with the <strong>one-standard-error rule</strong>: find the best mean score, and among all settings within one standard error of it (SE = spread over the 7 folds ÷ √7), pick the simplest. Differences smaller than that are noise from which people landed in which fold.</p>
+  <div class="tablewrap"><table class="wide">
+    <tr><th>Model</th><th>Core idea</th><th>Main assumption</th><th>Why try it here</th><th>Chosen setting</th><th>CV macro-F1</th></tr>
+    <tr><td>Majority class (baseline)</td><td>Always predict the most common training activity (lying)</td><td>None</td><td>The floor every model must beat; shows why accuracy alone misleads</td><td>–</td><td>0.05</td></tr>
+    <tr><td>Physics baseline</td><td>Logistic regression on 4 numbers per window: the mean of total acceleration on x, y, z (direction of gravity, so posture) and the spread of body-acceleration size (motion)</td><td>Posture and movement are enough to tell the activities apart</td><td>The simplest model a physicist would try; shows what the 561 engineered features add</td><td>C = 1 (default, not tuned)</td><td><span data-ex="physics_baseline.macro_f1">…</span></td></tr>
+    <tr><td>Logistic regression (ridge, lasso)</td><td>A weighted sum of the features per activity, turned into probabilities; fitted by minimising log-loss plus a penalty on large weights</td><td>Linear boundaries between activities</td><td>The simplest real model, and transparent: every prediction can be recomputed by hand</td><td>Lasso, C = 0.1</td><td>0.934</td></tr>
+    <tr><td>RBF support vector machine</td><td>The widest-margin boundary in a space where “similar” means “close”; the boundary can bend</td><td>Windows that are close in feature space share an activity</td><td>Tests whether non-linear boundaries help</td><td>C = 1, γ = 0.001</td><td>0.931</td></tr>
+    <tr><td>Random forest</td><td>The vote of many decision trees, each grown on a bootstrap sample with random feature subsets</td><td>Activities can be separated by thresholds on single features</td><td>A different model family that needs no scaling</td><td>100 trees, depth 10</td><td>0.907</td></tr>
+  </table></div>
+  <p><strong>More complex was not better here.</strong> The linear model ties with the SVM and beats the forest. The engineered features already make the activities close to linearly separable, and the remaining errors come from differences between people, which a more flexible model does not remove.</p>
+  <div class="grid2">
+    <div class="card"><span class="owner">Bhavya</span><h3>Logistic regression</h3><p class="small">Gives each activity a score that is a weighted sum of the 561 features, and turns the six scores into probabilities with softmax. It is fitted by maximum likelihood plus a penalty on large weights: <strong>ridge</strong> (shrinks all weights) or <strong>lasso</strong> (sets many to exactly zero). The assumption is linear boundaries between activities. We reproduced one prediction by hand: for a standing window of an unseen person the scores were 16.4 for standing and 6.6 for sitting (the physically similar posture), giving 99.99% standing.</p></div>
+    <div class="card"><span class="owner">Lakshika</span><h3>RBF support vector machine</h3><p class="small">Drops the linear assumption: the boundary can bend, with flexibility set by <strong>gamma</strong> (how local each training window's influence is) and <strong>C</strong> (how much mistakes are penalised). Gamma matters far more than C: at gamma = 0.1 every window looks unlike every other and the model collapses to 0.06. The model keeps 2,133 of 6,294 training windows as support vectors (one fold), most of them sitting (538) and standing (493): the hardest pair needs the most boundary examples. It ties with lasso (0.931 vs 0.934) and varies less between people (fold std 0.027 vs 0.036).</p></div>
+    <div class="card"><span class="owner">Lakshika</span><h3>Random forest</h3><p class="small">Many decision trees, each on a bootstrap sample with random feature subsets, voting together. Needs no scaling. The settings barely matter (all 27 between 0.891 and 0.909). Fewer features per split is slightly better (23 features: 0.905–0.909; 168 features: 0.891–0.894): the trees then differ more from each other, so the vote averages out more of their mistakes. We did <em>not</em> use the out-of-bag score, because overlapping windows from the same people would leak into it.</p></div>
+  </div>
+
+  <div class="card">
+    <p class="try">Try it</p>
+    <h3>How tuning looked for each model</h3>
+    <div class="seg" id="tuneTabs"><button data-m="logistic_L2" class="on">Ridge logistic</button><button data-m="logistic_L1">Lasso logistic</button><button data-m="svm_rbf">RBF SVM</button><button data-m="random_forest">Random forest</button></div>
+    <p class="small muted" id="tuneNote" style="margin-top:12px"></p>
+    <div id="tuneChart"></div>
+    <p class="small" id="tuneDetail"></p>
+  </div>
+
+  <h3>What tuning taught us</h3>
+  <ul>
+    <li><strong>Ridge:</strong> every C from 0.01 to 100 is within noise of the best. Differences between people (fold scores 0.885–0.981) are far larger than differences between settings.</li>
+    <li><strong>Lasso</strong> matches the best score using about a third of the features (161–190 of 561 at C = 0.1). But which features it keeps changes from fold to fold, because many features are near-copies, so we make no “most important features” claims.</li>
+    <li><strong>Random forest importance</strong> agrees: impurity and permutation importance share only 1 feature in their top 15, and shuffling any single feature costs at most 0.0014 macro-F1. Shuffling one gravity feature <em>together with its 4 near-copies</em> costs 0.196. Importance belongs to groups of correlated features, not to single features.</li>
+  </ul>
+  <div class="grid2">
+    <figure><img src="img/svm_grid.png" alt="Heatmap of SVM macro-F1 over C and gamma" loading="lazy"><figcaption>SVM grid: the columns (gamma) matter, the rows (C) much less.</figcaption></figure>
+    <figure><img src="img/forest_importance.png" alt="Impurity and permutation importance for the random forest" loading="lazy"><figcaption>Forest importance: two methods, two almost unrelated top-15 lists.</figcaption></figure>
+  </div>
+  <p class="more">Details and code in the repository: <a href="https://github.com/chaudharybhavya/ML_HAR/blob/main/04_logistic.ipynb">04_logistic.ipynb</a>, <a href="https://github.com/chaudharybhavya/ML_HAR/blob/main/05_svm.ipynb">05_svm.ipynb</a>, <a href="https://github.com/chaudharybhavya/ML_HAR/blob/main/06_random_forest.ipynb">06_random_forest.ipynb</a>; every fold score of every setting is in <a href="https://github.com/chaudharybhavya/ML_HAR/tree/main/results">results/cv_*.csv</a>.</p>
+</section>
+
+<section id="selection">
+  <h2>7. Choosing the final model</h2>
+  <span class="owner">Bhavya</span>
+  <p>The three candidates (each model's one-SE choice) were compared fold by fold on the same people. The same one-SE rule across models gives a threshold of 0.934 − 0.014 = <strong>0.920</strong>: lasso (0.934) and SVM (0.931) qualify, the forest (0.907) does not. Lasso vs SVM cannot be told apart (SVM is better on 2 of 7 folds, by at most 0.022), so we took the <strong>simpler one: lasso logistic regression, C = 0.1</strong> (linear, about 180 features). <strong>The decision was written down before the test set was opened.</strong></p>
+  <div class="card">
+    <p class="try">Try it</p>
+    <h3>Each fold is a different group of 3 people</h3>
+    <div class="legend" id="selLegend"></div>
+    <div id="selChart"></div>
+    <p class="small muted">Click a model to hide or show it. Notice that “hard people” depend on the model: fold 2 is the linear models' worst fold but the forest's best; fold 1 is the forest's worst.</p>
+  </div>
+  <p class="more">Details and code in the repository: <a href="https://github.com/chaudharybhavya/ML_HAR/blob/main/07_selection_final_test.ipynb">07_selection_final_test.ipynb</a>.</p>
+</section>
+
+<section id="test">
+  <h2>8. The final test: 9 people, used once</h2>
+  <span class="owner">Bhavya</span>
+  <p>The chosen model was retrained on all 21 training people and evaluated <strong>once</strong> on the 9 test people (2,947 windows).</p>
+  <div class="tiles">
+    <div class="tile hl"><div class="n">0.945</div><div class="l">test macro-F1 (accuracy 0.946)</div></div>
+    <div class="tile"><div class="n">0.906–0.975</div><div class="l">95% bootstrap interval, resampling the 9 <em>people</em> (not windows) 2,000 times</div></div>
+    <div class="tile"><div class="n">0.934</div><div class="l">what cross-validation predicted. The test score is consistent with it.</div></div>
+  </div>
+  <p>Why resample people? A person's windows are strongly correlated (neighbours overlap, and every window carries that person's posture and gait), so the real sample size is 9 people, not 2,947 windows. With only 9 people, the honest claim is a range of roughly 0.91–0.97. For context only (run after the decision): the SVM scored 0.947 and the forest 0.919. The SVM–lasso gap of 0.002 is far inside that uncertainty.</p>
+  <p>For context, the dataset's authors report 96% test accuracy on the same 2,947 test windows with a multiclass SVM (Anguita et al., 2013). Our 94.6% is in the same range, from a linear model whose every choice was made on the training people.</p>
+  <div class="card">
+    <h3>Score for each test person</h3>
+    <div id="personChart"></div>
+    <p class="small muted">Most people are near-perfect; person 10 sees about 1 window in 6 wrong. The average hides that.</p>
+  </div>
+  <p class="more">Details and code in the repository: <a href="https://github.com/chaudharybhavya/ML_HAR/blob/main/07_selection_final_test.ipynb">07_selection_final_test.ipynb</a>; every test prediction is in <a href="https://github.com/chaudharybhavya/ML_HAR/blob/main/results/test_predictions_lasso.csv">results/test_predictions_lasso.csv</a>.</p>
+</section>
+
+<section id="errors">
+  <h2>9. Error analysis: where and why the model goes wrong</h2>
+  <span class="owner">Bhavya</span>
+  <div class="card">
+    <p class="try">Try it</p>
+    <h3>Confusion matrix on the test people</h3>
+    <div class="row"><label class="small" for="cmPerson">Show:</label><select id="cmPerson"></select></div>
+    <div class="tablewrap"><table class="cm" id="cmTable"></table></div>
+    <p class="small" id="cmInfo">Rows are the true activity, columns the prediction. Click any cell to see which people its windows come from.</p>
+  </div>
+  <ul>
+    <li><strong>Two blocks, almost nothing between them.</strong> 74 errors among the still postures (sit → stand 55, stand → sit 19), 82 among the walking types (up → walk 36, down → up 33), and only 4 between moving and still. Lying is perfect (537 of 537).</li>
+    <li><strong>Errors are concentrated.</strong> People 10, 9 and 20 make 113 of the 160 errors (71%); person 24 makes none. Stairs errors are person-specific (down → up comes only from people 20 and 18). Sit → stand appears in 7 of 9 people, so it is a weakness of the method rather than of one person.</li>
+  </ul>
+  <figure><img src="img/errors_gravity.png" alt="Mean gravity y vs z for sitting and standing test windows; misclassified windows marked with crosses" loading="lazy"><figcaption>Physics check on the still windows (crosses = mistakes). Most sit/stand errors lie where the sitting and standing tilt clouds overlap. Some sitting windows of people 9 and 10 lie <em>outside every other person's cloud</em>: a posture the model never saw, which it confidently calls “standing”. Errors come in clumps, a whole bout of near-identical windows at once. (Only 2 of 561 features are shown, so this explains much of the confusion, not every error.)</figcaption></figure>
+
+  <div class="card">
+    <p class="try">Try it</p>
+    <h3>Could an app say “not sure” instead of being wrong?</h3>
+    <p class="small">The model gives a probability for its answer. Suppose the app only answers when that confidence is at least the threshold, and says “not sure” otherwise.</p>
+    <label class="small" for="confSlider">Confidence threshold: <strong id="confVal">0.90</strong></label>
+    <input type="range" id="confSlider" min="0.40" max="0.99" step="0.01" value="0.90">
+    <div class="stat3">
+      <div><div class="n" id="cAns">–</div><div class="small muted">of windows answered</div></div>
+      <div><div class="n" id="cAcc">–</div><div class="small muted">accuracy when it answers</div></div>
+      <div><div class="n" id="cCaught">–</div><div class="small muted">of all mistakes avoided by saying “not sure”</div></div>
+      <div><div class="n" id="cLeft" style="color:var(--warn)">–</div><div class="small muted">wrong answers still given</div></div>
+    </div>
+    <p class="small muted">At 0.9 the app stays silent on about 22% of windows but avoids about 86% of its mistakes. The mistakes that remain are the confident ones, mostly the unfamiliar sitting posture of person 10. Confidence cannot flag what the model has never seen. This explorer only <em>describes</em> the test predictions; an app's threshold would have to be chosen on the training people's cross-validation predictions, not on the test people.</p>
+  </div>
+  <p class="more">Details and code in the repository: <a href="https://github.com/chaudharybhavya/ML_HAR/blob/main/08_errors.ipynb">08_errors.ipynb</a>.</p>
+</section>
+
+<section id="phone">
+  <h2>10. A blind test on our own phone</h2>
+  <span class="owner">Lakshika</span>
+  <p>Everything above comes from one dataset, recorded in one lab with one phone. To see whether the model holds up outside it, Bhavya recorded all six activities on a different phone, and we ran the final model on those recordings. <strong>The model and its setting were fixed (section 7) before the recordings were made, and nothing was tuned on them.</strong></p>
+
+  <h3>From a phone recording to UCI-style features</h3>
+  <ol class="pipe" aria-label="Phone pipeline steps">
+    <li><div class="box"><b>Load</b><span>phyphox CSV; m/s² → g, gyroscope in rad/s</span></div></li>
+    <li><div class="box"><b>Clean</b><span>even time grid, median filter, 20 Hz Butterworth</span></div></li>
+    <li><div class="box"><b>Resample</b><span>to 50 Hz, like UCI</span></div></li>
+    <li><div class="box"><b>Split gravity</b><span>0.3 Hz Butterworth (causal); body = total − gravity</span></div></li>
+    <li><div class="box"><b>Window</b><span>2.56 s, 50% overlap; first and last 5 s cut</span></div></li>
+    <li><div class="box"><b>Features</b><span>451 of the 561, on UCI's [−1, 1] scale</span></div></li>
+  </ol>
+  <p>We checked the pipeline on UCI's own raw training signals before using it on a phone:</p>
+  <ul>
+    <li><strong>451 of the 561 features are reproduced</strong> (correlation ≥ 0.99 with the dataset's values). The other 110 cannot be: the dataset does not define its entropy, its gravity-magnitude columns are copies of the body-magnitude ones, and some gravity and high-frequency jerk features are unstable.</li>
+    <li>Our 0.3 Hz filter gives the dataset's gravity signal to within <strong>0.002 g</strong> (median), using a causal filter (a zero-delay filter is about 4× further off).</li>
+    <li>Logistic regression on our recomputed 451 features scores 0.931, vs 0.933 on all 561 provided features.</li>
+  </ul>
+  <figure><img src="img/phone_pipeline_check.png" alt="Features recomputed by our pipeline against the dataset's own feature values" loading="lazy"><figcaption>Our recomputed features against the dataset's own values: some match exactly, others only partly. This is why only 451 are used.</figcaption></figure>
+
+  <h3>The recordings</h3>
+  <div class="tablewrap"><table class="keyval">
+    <tr><th>Who and what</th><td>Person “bhavya”, 14 Nov 2026. vivo V2439 (Android 16), phyphox app, accelerometer <em>with</em> gravity + gyroscope at 50 Hz.</td></tr>
+    <tr><th>Position</th><td>Waist, on the side of the hip, landscape, screen facing outward; the same for every recording.</td></tr>
+    <tr><th>Amount</th><td>About 67 s per activity (lying 83 s): <strong>43 windows per activity, 55 for lying, 270 in total</strong>.</td></tr>
+    <tr><th>Orientation</th><td>Standing gives gravity x, y, z = 1.00, 0.01, 0.17 g (UCI training average: 1.00, −0.16, −0.03), so no axis remapping was needed. But the phone leans about 0.2 g further towards z than UCI's phone in every posture.</td></tr>
+  </table></div>
+
+  <h3>The model</h3>
+  <p>The final model takes 561 features, and the phone can deliver only 451. So we trained <strong>the same pipeline with the same setting</strong> (lasso, C = 0.1) on those 451 features of the 21 training people. With the same person-wise folds it scores <strong>0.926 ± 0.042</strong>, against 0.934 ± 0.036 with all 561: lower on every fold, but the average drop (0.008) is smaller than one standard error (0.014).</p>
+
+  <div class="tiles">
+    <div class="tile hl"><div class="n">0.860</div><div class="l">macro-F1 on the phone<br>(accuracy 0.870, 235 of 270 windows)</div></div>
+    <div class="tile"><div class="n">0.945</div><div class="l">for comparison: the 9 UCI test people (section 8)</div></div>
+    <div class="tile"><div class="n">0.581</div><div class="l">recall for upstairs, the weakest activity<br>(walking and lying: 1.000)</div></div>
+    <div class="tile"><div class="n">98.7%</div><div class="l">right when at least 90% confident<br>(but only 56% of windows get there)</div></div>
+  </div>
+
+  <div class="card">
+    <p class="try">Try it</p>
+    <h3>Confusion matrix on the phone recordings</h3>
+    <div class="tablewrap"><table class="cm" id="phoneCm"></table></div>
+    <p class="small" id="phoneCmInfo">Rows are the true activity, columns the prediction. Click a cell to see when, within its recording, those windows happened.</p>
+  </div>
+
+  <div class="card">
+    <h3>Recall per activity: UCI test people vs our phone</h3>
+    <div class="chartlegend"><span><i style="background:var(--c1)"></i>9 UCI test people (section 9)</span><span><i style="background:var(--c2)"></i>our phone (one person)</span></div>
+    <div id="recallChart"></div>
+    <p class="small muted">The phone loses accuracy in the same two blocks where the test people made their mistakes: the walking types (here upstairs, mostly called “walking”) and sitting vs standing. Walking, downstairs and lying stay near-perfect, and moving vs still is confused only twice in 270 windows.</p>
+  </div>
+
+  <div class="card">
+    <h3>Why upstairs is the weakest activity</h3>
+    <p class="small">Of the 43 upstairs windows, 13 were called walking, 4 downstairs and 1 lying. Two things explain much of this.</p>
+    <ul class="small">
+      <li><strong>Mixed labels.</strong> The staircase had a short landing (about two flat steps) after roughly every ten stairs. The whole recording is labelled “upstairs”, but some of its windows contain flat walking, so for those windows “walking” is partly right.</li>
+      <li><strong>Forward lean.</strong> Landings happened throughout the recording, but the errors did not: 18 of the first 29 windows are wrong, and the last 14 (from 42 s on) are all correct. In the correctly recognised windows the phone leaned further forward (mean gravity z 0.43 g) than in the misrecognised ones (0.36 g; flat walking: 0.27 g). So the model seems to tell climbing from walking largely by this lean, and when the climber stays more upright it sees walking.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>Why sitting vs standing fails: the tilt of the phone</h3>
+    <div class="chartlegend"><span><i style="background:var(--c1);opacity:.5"></i>UCI training: sitting</span><span><i style="background:var(--c2);opacity:.5"></i>UCI training: standing</span><span>● phone sitting · ■ phone standing (<span style="color:var(--warn)">red</span> = wrong)</span></div>
+    <div id="tiltChart"></div>
+    <p class="small">For the 21 training people, sitting and standing differ mostly along <strong>gravity y</strong> (averages: sitting +0.14 g, standing −0.16 g). On this phone, worn on the side of the hip, both postures sit at <strong>y ≈ 0</strong>, right on the border between the two clouds. They differ only along z (0.34 vs 0.17 g), a direction in which the training people's postures overlap. So the tilt the model relies on is nearly the same for both postures. This resembles what section 9 found for test people 9 and 10.</p>
+  </div>
+
+  <div class="card">
+    <h3>Is the model's confidence still trustworthy?</h3>
+    <div class="tablewrap"><table id="confCompare"></table></div>
+    <p class="small muted">When the model is very confident it is still almost always right on the new phone. It is just very confident less often, and it is unsure in the right places: its mean confidence is lowest for upstairs and sitting.</p>
+  </div>
+
+  <h3>Context only: smoothing over consecutive windows</h3>
+  <p>An app sees a stream of windows, so it could report the majority vote of the last few windows instead of each window alone. On the phone recordings this raises macro-F1 from 0.860 to 0.870 (last 3 windows) and 0.886 (last 5). This is not part of the final model and was not used to choose anything.</p>
+
+  <p class="callout warn"><strong>Caveat.</strong> This is one person, one phone, one session, with one recording per activity. There is nothing to resample that would say how the model does for other people or phones, so we give no interval. The result shows that the model transfers, and how it fails; it does not estimate how well it works for people in general.</p>
+  <p class="more">Details and code in the repository: <a href="https://github.com/chaudharybhavya/ML_HAR/blob/main/09_phone_pipeline.ipynb">09_phone_pipeline.ipynb</a> (pipeline and its checks), <a href="https://github.com/chaudharybhavya/ML_HAR/blob/main/10_phone_test.ipynb">10_phone_test.ipynb</a> (the test); recordings in <a href="https://github.com/chaudharybhavya/ML_HAR/tree/main/data/phone/bhavya">data/phone/bhavya/</a>.</p>
+</section>
+
+<section id="whatif">
+  <h2>11. What happens if we change something?</h2>
+  <span class="owner">Both</span>
+  <p>One way to check that we understand a result is to say what a small change would do to it, and why. The first table lists changes we <strong>actually ran</strong>; each links back to its evidence. The second lists changes we did <strong>not</strong> run, with what we expect and our reasoning.</p>
+  <h3>Changes we ran</h3>
+  <div class="tablewrap"><table class="wide">
+    <tr><th>Change</th><th>What happened (macro-F1)</th><th>Why</th></tr>
+    <tr><td>Split windows at random instead of by person</td><td><span data-ex="person_split.macro_f1">…</span> → <strong><span data-ex="random_split.macro_f1">…</span></strong>; spread between folds <span data-ex="person_split.f1_std">…</span> → <span data-ex="random_split.f1_std">…</span></td><td>Overlapping neighbours and the same people land on both sides, so the model is graded on people it has seen (<a href="#evaluation">section 5</a>)</td></tr>
+    <tr><td>Much stronger penalty (ridge, C = 0.001)</td><td>0.933 → 0.913</td><td>The weights are pushed too close to zero to express real patterns: underfitting (<a href="#models">section 6</a>)</td></tr>
+    <tr><td>Much weaker penalty (ridge, C = 100)</td><td>0.933 → 0.922</td><td>Large weights fit quirks of the 18 training people that do not carry over to new people</td></tr>
+    <tr><td>Lasso with a strong penalty (C = 0.01)</td><td>0.934 → 0.908, with only 62–73 features kept</td><td>Too few features survive; a third of them (C = 0.1) is enough, an eighth is not</td></tr>
+    <tr><td>PCA to 100 components first</td><td>0.933 → 0.920 (10 components: 0.838)</td><td>PCA keeps the largest variation, and the small posture differences are not large variation (<a href="#features">section 3</a>)</td></tr>
+    <tr><td>SVM with γ = 0.1 instead of 0.001</td><td>0.931 → about 0.06, the baseline level</td><td>Each training window is then “similar” only to itself, so the model memorises and cannot generalise</td></tr>
+    <tr><td>Random split, but remove training windows that overlap a validation window</td><td><span data-ex="random_split.macro_f1">…</span> → <span data-ex="random_split_neighbours_removed.macro_f1">…</span> (person split: <span data-ex="person_split.macro_f1">…</span>)</td><td>Separates the two leaks: the drop is what overlap was worth; what remains above the person split comes from seeing the same people (<a href="#evaluation">section 5</a>)</td></tr>
+    <tr><td>Use 4 physics numbers instead of the 561 features</td><td><span data-ex="person_split.macro_f1">…</span> → <span data-ex="physics_baseline.macro_f1">…</span></td><td>Posture and movement alone already carry most of the signal; the 561 features add 0.112. The physics baseline also varies far more between people (fold scores 0.731–0.926 vs 0.885–0.981), so the detailed features mainly help with people whose movement differs from the rest (<a href="#data">section 2</a>)</td></tr>
+    <tr><td>Drop the 110 features a phone cannot reproduce</td><td>0.934 → 0.926</td><td>A small loss, inside one standard error (0.014): the lost features have near-copies among the 451 kept</td></tr>
+    <tr><td>Another person, phone and placement</td><td>0.945 → 0.860</td><td>The phone sat more on the side of the hip, so the gravity tilt that separates sitting from standing in the training data is missing (<a href="#phone">section 10</a>)</td></tr>
+    <tr><td>Answer only when at least 90% confident</td><td>Accuracy 94.6% → 99.0%, on 78% of the test windows</td><td>Most errors are low-confidence; the confident ones are unfamiliar postures (<a href="#errors">section 9</a>)</td></tr>
+    <tr><td>Majority vote over the last 5 windows (phone)</td><td>0.860 → 0.886</td><td>Isolated errors are outvoted; whole misread bouts are not. Optimistic, because each recording holds a single activity with no switches</td></tr>
+  </table></div>
+  <h3>Changes we did not run: what we expect</h3>
+  <div class="tablewrap"><table class="wide">
+    <tr><th>Change</th><th>What we expect</th><th>Reasoning</th></tr>
+    <tr><td>Switch to the SVM because it scored 0.947 on the test people</td><td>The reported score would stop being an honest estimate</td><td>The test set would then have been used to choose. The 0.002 gap is far inside the ±0.035 uncertainty, so it is not evidence that the SVM is better</td></tr>
+    <tr><td>Bootstrap over windows instead of people</td><td>A much narrower, misleading interval</td><td>It would treat 2,947 correlated windows as independent, when the real sample is 9 people whose scores range from 0.83 to 1.00</td></tr>
+    <tr><td>Phone in a trouser pocket</td><td>Sitting, standing and lying would often be confused; moving vs still should survive</td><td>Postures are told apart by the direction of gravity relative to the phone, which changes completely with placement; movement size does not</td></tr>
+    <tr><td>Train on more people</td><td>Probably the largest gain of any change, mostly for the hardest people</td><td>Differences between people (fold scores 0.885–0.981) dwarf differences between models and settings, and confident errors come from postures absent from the training people</td></tr>
+  </table></div>
+</section>
+
+<section id="limits">
+  <h2>12. Limitations</h2>
+  <ol>
+    <li><strong>Who it learned from:</strong> 21 adults doing scripted activities in a lab with one phone model at one position. Other placements, phones, ages and free-living behaviour are untested here, apart from our one-person phone test (section 10).</li>
+    <li><strong>Unfamiliar postures fail confidently.</strong> The model only knows postures like its training people's.</li>
+    <li><strong>Few people.</strong> 9 test people give a wide interval (0.906–0.975), and individuals range from 0.83 to 1.00.</li>
+    <li><strong>Correlated errors.</strong> Windows within a bout and a person are not independent evidence.</li>
+    <li><strong>One window at a time.</strong> Activities last many windows; smoothing predictions over time could fix isolated errors. It is not part of the final model and was only tried as context on our phone recordings (a vote over the last 5 windows: 0.860 → 0.886).</li>
+    <li><strong>No transitions</strong> (e.g. standing up) in the six classes.</li>
+    <li><strong>Prediction, not explanation.</strong> Feature choices and importances are unstable among correlated features, so we make no causal claims.</li>
+  </ol>
+</section>
+
+<section id="conclusions">
+  <h2>13. Conclusions</h2>
+  <span class="owner">Both</span>
+  <p><strong>The question:</strong> can a phone on the waist tell which of six activities a person it has never seen is doing?</p>
+  <p><strong>Our answer:</strong> largely yes, under the dataset's conditions. A lasso logistic regression reaches <strong>macro-F1 0.945 on 9 unseen people</strong> (95% interval over people 0.906–0.975), against 0.821 for a 4-number physics baseline and 0.05 for always guessing the most common activity.</p>
+  <h3>What the evidence supports</h3>
+  <ol>
+    <li><strong>How you test decides what you learn.</strong> The same model scores 0.985 with a random split and 0.933 when whole people are held out. Removing overlapping windows barely changes this (0.977): the inflation comes mainly from having seen the same people. Only the person split answers our question, and the cross-validation estimate built on it (0.934) is consistent with the final test (0.945).</li>
+    <li><strong>A simple, regularised linear model is enough.</strong> It ties with the RBF SVM and beats the random forest. With 21 training people the two best models cannot be told apart, so the choice followed a rule fixed in advance, not the test score.</li>
+    <li><strong>The average hides people.</strong> Test people range from 0.83 to 1.00, and three of the nine make 71% of the errors.</li>
+    <li><strong>The errors are physical, not random.</strong> The model never confuses moving with still and never misses lying. It fails where the signals themselves are close: sitting vs standing (a small tilt) and the three ways of walking.</li>
+    <li><strong>Confidence helps, up to a point.</strong> At 90% confidence or more the model is right 99% of the time, but it is also confidently wrong on postures unlike any in its training people.</li>
+    <li><strong>It transfers to another phone only partly.</strong> On our own recordings it scores 0.860, with the same two confusions enlarged, and how the phone sits on the hip explains the sitting vs standing failures.</li>
+  </ol>
+  <h3>What we do not claim</h3>
+  <ul>
+    <li>That 0.945 holds for other phone positions, other populations, or unscripted daily life.</li>
+    <li>That any single feature is “the important one”, or that the model explains <em>why</em> an activity looks the way it does. It predicts.</li>
+    <li>That the phone result (one person, one session) estimates performance for people in general.</li>
+  </ul>
+  <h3>What we would do next</h3>
+  <p>Collect more people and more phone placements, since differences between people limit the result far more than the choice of model; add features aimed at the sitting vs standing tilt; and test smoothing over time on recordings that include switches between activities.</p>
+</section>
+
+<section id="repro">
+  <h2>14. Reproduce it, and who did what</h2>
+  <ul>
+    <li><strong>Code:</strong> <a href="https://github.com/chaudharybhavya/ML_HAR">github.com/chaudharybhavya/ML_HAR</a>. Notebooks <code>01</code>–<code>10</code>, run in order; shared settings in <code>config.py</code> (<code>SEED = 42</code>).</li>
+    <li><strong>Data:</strong> download the UCI HAR dataset from the <a href="https://archive.ics.uci.edu/dataset/240/human+activity+recognition+using+smartphones">UCI repository</a> and unzip it to <code>data/raw/UCI HAR Dataset/</code>. It is not stored in the repository.</li>
+    <li><strong>Split:</strong> the person → fold table is saved in <code>results/folds.csv</code>; all fold scores are saved in <code>results/cv_*.csv</code>; the final test predictions are in <code>results/test_predictions_lasso.csv</code>; the leakage splits and the physics baseline in <code>results/extra_experiments.csv</code>. The page's data file <code>docs/data.js</code> is rebuilt from those files by <code>docs/make_data.py</code>.</li>
+    <li><strong>Phone test:</strong> the recordings are in <code>data/phone/bhavya/</code>; their windows and features in <code>results/phone_features_bhavya.csv</code>, the predictions in <code>results/phone_predictions_bhavya.csv</code>. The phone section of this page is built from them by <code>docs/make_phone_data.py</code>.</li>
+    <li><strong>Hardware:</strong> a laptop CPU, no GPU. The lasso fits are the slowest steps: about 25 minutes in <code>04</code>, and about 50 minutes for the eight fits in <code>10</code> on battery power.</li>
+  </ul>
+  <h3>Where each part of this page lives in the repository</h3>
+  <div class="tablewrap"><table class="wide">
+    <tr><th>Section of this page</th><th>Notebook</th><th>Saved results it produces</th></tr>
+    <tr><td>2. Data</td><td><a href="https://github.com/chaudharybhavya/ML_HAR/blob/main/01_signals.ipynb">01_signals.ipynb</a></td><td>–</td></tr>
+    <tr><td>3. Features and PCA</td><td><a href="https://github.com/chaudharybhavya/ML_HAR/blob/main/02_features_pca.ipynb">02_features_pca.ipynb</a></td><td>–</td></tr>
+    <tr><td>5. Evaluation design</td><td><a href="https://github.com/chaudharybhavya/ML_HAR/blob/main/03_evaluation.ipynb">03_evaluation.ipynb</a></td><td><code>results/folds.csv</code></td></tr>
+    <tr><td>6. Logistic regression</td><td><a href="https://github.com/chaudharybhavya/ML_HAR/blob/main/04_logistic.ipynb">04_logistic.ipynb</a></td><td><code>results/cv_logistic.csv</code></td></tr>
+    <tr><td>6. RBF SVM</td><td><a href="https://github.com/chaudharybhavya/ML_HAR/blob/main/05_svm.ipynb">05_svm.ipynb</a></td><td><code>results/cv_svm.csv</code></td></tr>
+    <tr><td>6. Random forest</td><td><a href="https://github.com/chaudharybhavya/ML_HAR/blob/main/06_random_forest.ipynb">06_random_forest.ipynb</a></td><td><code>results/cv_forest.csv</code></td></tr>
+    <tr><td>7–8. Selection and final test</td><td><a href="https://github.com/chaudharybhavya/ML_HAR/blob/main/07_selection_final_test.ipynb">07_selection_final_test.ipynb</a></td><td><code>results/test_predictions_lasso.csv</code>, <code>results/test_per_person_lasso.csv</code></td></tr>
+    <tr><td>9. Error analysis</td><td><a href="https://github.com/chaudharybhavya/ML_HAR/blob/main/08_errors.ipynb">08_errors.ipynb</a></td><td>–</td></tr>
+    <tr><td>10. Phone pipeline</td><td><a href="https://github.com/chaudharybhavya/ML_HAR/blob/main/09_phone_pipeline.ipynb">09_phone_pipeline.ipynb</a></td><td><code>results/phone_features_bhavya.csv</code></td></tr>
+    <tr><td>10. Phone test</td><td><a href="https://github.com/chaudharybhavya/ML_HAR/blob/main/10_phone_test.ipynb">10_phone_test.ipynb</a></td><td><code>results/phone_predictions_bhavya.csv</code></td></tr>
+  </table></div>
+  <p class="small muted">Setup, run steps and data-access instructions are in the <a href="https://github.com/chaudharybhavya/ML_HAR#readme">README</a>.</p>
+
+  <h3>Who did what, and the choices each of us made</h3>
+  <div class="grid2 who">
+    <div class="card">
+      <h3>Bhavya Chaudhary (25110075)</h3>
+      <dl>
+        <dt>Contribution</dt>
+        <dd>Raw signals and physics, data audit (section 2); evaluation design (5); logistic regression, ridge vs lasso (6); model selection and the final test (7, 8); error analysis (9); the phone recordings (10).</dd>
+        <dt>Key choices</dt>
+        <dd>Split by person, because windows overlap by half and people move differently. Macro-F1 instead of accuracy alone. One saved set of folds for every model. The one-standard-error rule, and writing the final choice down before opening the test set. A bootstrap over people, not windows.</dd>
+        <dt>A limitation</dt>
+        <dd>Nine test people give a wide interval (0.906–0.975), and the model is confidently wrong on postures unlike its training people's, which no amount of tuning on this data can fix.</dd>
+        <dt>A small change</dt>
+        <dd>Testing with a random window split would have reported 0.985 instead of 0.933, and hidden nearly all of the variation between people.</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h3>Lakshika Aswal (25110179)</h3>
+      <dl>
+        <dt>Contribution</dt>
+        <dd>The 561 features and PCA (section 3); the RBF SVM and the random forest with its feature importance (6); the phone signal pipeline and the phone test (10).</dd>
+        <dt>Key choices</dt>
+        <dd>PCA fitted inside the pipeline, then left out because it cost accuracy. No out-of-bag score for the forest, because overlapping windows leak into it. Importance measured on held-out people and for groups of correlated features. A causal 0.3 Hz filter and only the 451 features the pipeline reproduces, with the same model setting retrained on them.</dd>
+        <dt>A limitation</dt>
+        <dd>The phone test is one person, one phone and one session, and 110 of the 561 features cannot be reproduced from a phone recording.</dd>
+        <dt>A small change</dt>
+        <dd>Raising the SVM's γ from 0.001 to 0.1 drops it from 0.931 to about 0.06: every window becomes similar only to itself.</dd>
+      </dl>
+    </div>
+  </div>
+  <p class="small muted">Both: project setup, this website, the README.</p>
+  <h3>Changes from our proposal</h3>
+  <ul class="small">
+    <li><strong>PCA before the SVM:</strong> planned, then dropped, because PCA lowered the score of the model we tested it with (section 3).</li>
+    <li><strong>Lasso to show “which features carry the signal”:</strong> its choices change from fold to fold among near-copy features, so we report how many features it needs, not which ones (section 6).</li>
+    <li><strong>Leave-one-person-out over all 30 people:</strong> not run. Over all 30 it would use the test people for evaluation design; over the 21 training people, the 7-fold out-of-fold predictions already score every person, and 21 more slow lasso fits would add little.</li>
+    <li><strong>External test:</strong> the proposal described recordings on our own phones. We recorded one person (Bhavya) on one phone. Instead of a separate simple-feature model, we reproduced 451 of the 561 features so that the phone model stays close to the final model (section 10).</li>
+    <li><strong>Split explorer:</strong> it shows the score, misclassified windows and fold spread for the three splits, but not a separate confusion matrix for each split. The confusion matrix is shown for the final test instead (section 9).</li>
+  </ul>
+  <h3>Use of AI tools</h3>
+  <p>We used Claude (Anthropic) as a tutor and assistant. It explained concepts and the physics of the data; helped with debugging; suggested and wrote notebook code under our direction; drafted parts of the notebook text, the README and the website; and helped build the structure and interactive charts of the website from our saved results.
+
+We planned the analyses, set the rules they follow (person-wise folds, the one-standard-error rule, a blind phone test with nothing tuned on it) and made the decisions. We checked every reported number against our notebook outputs, we are responsible for all results, and we can explain every step.</p>
+  <p>We planned the analyses, set the rules they follow (person-wise folds, the one-standard-error rule, a blind phone test with nothing tuned on it) and made the decisions. We checked every reported number against our notebook outputs, we are responsible for all results, and we can explain every step.</p>
+</section>
+
+<section id="refs">
+  <h2>15. References</h2>
+  <ol class="refs">
+    <li>Anguita, D., Ghio, A., Oneto, L., Parra, X. and Reyes-Ortiz, J. L. (2013). A public domain dataset for human activity recognition using smartphones. <em>ESANN 2013</em>. Dataset: UCI Machine Learning Repository, CC BY 4.0.</li>
+    <li>Tibshirani, R. (1996). Regression shrinkage and selection via the lasso. <em>Journal of the Royal Statistical Society, Series B</em>, 58(1), 267–288.</li>
+    <li>Cortes, C. and Vapnik, V. (1995). Support-vector networks. <em>Machine Learning</em>, 20(3), 273–297.</li>
+    <li>Breiman, L. (2001). Random forests. <em>Machine Learning</em>, 45(1), 5–32.</li>
+    <li>Hastie, T., Tibshirani, R. and Friedman, J. (2009). <em>The Elements of Statistical Learning</em>, 2nd ed. Springer. (Cross-validation and the one-standard-error rule: section 7.10 of the book.)</li>
+    <li>Efron, B. and Tibshirani, R. J. (1993). <em>An Introduction to the Bootstrap</em>. Chapman &amp; Hall.</li>
+    <li>Pedregosa, F. et al. (2011). Scikit-learn: machine learning in Python. <em>Journal of Machine Learning Research</em>, 12, 2825–2830.</li>
+    <li>Saeb, S., Lonini, L., Jayaraman, A., Mohr, D. C. and Kording, K. P. (2017). The need to approximate the use-case in clinical machine learning. <em>GigaScience</em>, 6(5), 1–9. doi:10.1093/gigascience/gix019. (Record-wise vs subject-wise cross-validation.)</li>
+    <li>Staacks, S., Hütz, S., Heinke, H. and Stampfer, C. (2018). Advanced tools for smartphone-based experiments: phyphox. <em>Physics Education</em>, 53(4), 045009.</li>
+  </ol>
+</section>
+</main>
+<footer>ES 335 course project, IIT Gandhinagar, November 2026. Data: Anguita, Ghio, Oneto, Parra and Reyes-Ortiz (2013), “A Public Domain Dataset for Human Activity Recognition Using Smartphones”, ESANN. UCI Machine Learning Repository, CC BY 4.0.</footer>
+
+<script src="data.js"></script>
+<script src="phone.js"></script>
+<script>
+(function(){
+const H = window.HAR;
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const NS = "http://www.w3.org/2000/svg";
+const el = (tag, attrs={}, parent) => { const e=document.createElementNS(NS,tag); for(const k in attrs) e.setAttribute(k,attrs[k]); if(parent) parent.appendChild(e); return e; };
+const ACT = ["walk","up","down","sit","stand","lie"];
+const ACTL = ["walking","upstairs","downstairs","sitting","standing","lying"];
+const fmt = (x,d=3)=>Number(x).toFixed(d);
+
+/* theme toggle */
+const tb=document.getElementById("themebtn");
+tb.onclick=()=>{const r=document.documentElement;const dark=r.dataset.theme?r.dataset.theme==="dark":matchMedia("(prefers-color-scheme: dark)").matches;r.dataset.theme=dark?"light":"dark";renderAll();};
+
+/* nav highlight */
+const links=[...document.querySelectorAll("nav a")];
+const obs=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){links.forEach(a=>a.classList.toggle("on",a.getAttribute("href")==="#"+e.target.id));}});},{rootMargin:"-40% 0px -55% 0px"});
+document.querySelectorAll("header.hero, section").forEach(s=>obs.observe(s));
+
+/* ---------- 1. split toggle (numbers from results/extra_experiments.csv via data.js) ---------- */
+const foldPeople=["15, 22, 25","3, 8, 21","14, 26, 29","1, 6, 30","7, 19, 28","5, 16, 27","11, 17, 23"];
+const EX=H.extra;
+if(!EX){ // data.js was built before results/extra_experiments.csv existed
+  document.getElementById("splitcard").innerHTML='<p class="small">Missing data: run Cell 6 of 03_evaluation.ipynb, then <code>python docs/make_data.py</code>.</p>';
+}
+const errOf=k=>!EX?0:Math.round(1000*(1-EX[k].accuracy));
+const personFolds=EX?EX.person_split.folds:[];
+const SPLIT=!EX?{}:{
+  random:{key:"random_split",text:`Every fold contains a bit of every person, and each validation window has its overlapping neighbour in training. The model is graded on people it has already seen, so the score looks excellent and every fold looks the same.`},
+  purged:{key:"random_split_neighbours_removed",text:`The same random folds, but every training window that shares readings with a validation window is removed (about a quarter of the training windows). No readings are shared any more, yet the same people are still on both sides. Of the gap between the random split (${fmt(EX.random_split.macro_f1)}) and the person split (${fmt(EX.person_split.macro_f1)}), removing the overlap closes ${fmt(EX.random_split.macro_f1-EX.random_split_neighbours_removed.macro_f1)}; the remaining ${fmt(EX.random_split_neighbours_removed.macro_f1-EX.person_split.macro_f1)} comes from having seen the same people. (Removing neighbours also removes training windows, so the overlap's share is, if anything, overstated.)`},
+  person:{key:"person_split",text:`Each fold holds out 3 whole people. On new people the model misclassifies ${errOf("person_split")} windows per 1,000, against ${errOf("random_split")} with the random split, and the score swings from ${fmt(Math.min(...personFolds))} to ${fmt(Math.max(...personFolds))} depending on who is held out. That variation is real and matters for an app.`}
+};
+for(const k in SPLIT){const e=EX[SPLIT[k].key]; Object.assign(SPLIT[k],{score:fmt(e.macro_f1),err:errOf(SPLIT[k].key),spread:"±"+fmt(e.f1_std),mean:e.macro_f1,sd:e.f1_std});}
+const wg=document.getElementById("wgrid");
+if(wg) for(let i=0;i<1000;i++) wg.appendChild(document.createElement("i"));
+// deterministic scatter of error positions
+const order=[...Array(1000).keys()].map(i=>[(i*7919)%1000,i]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);
+function setSplit(s){
+  const d=SPLIT[s];
+  document.querySelectorAll("#splitcard .seg button").forEach(b=>b.classList.toggle("on",b.dataset.s===s));
+  document.getElementById("splitScore").textContent=d.score;
+  document.getElementById("splitErr").textContent=d.err;
+  document.getElementById("splitSpread").textContent=d.spread;
+  document.getElementById("splitText").textContent=d.text;
+  const err=new Set(order.slice(0,d.err));
+  [...wg.children].forEach((c,i)=>c.classList.toggle("e",err.has(i)));
+  drawSplitFolds(s);
+}
+function drawSplitFolds(s){
+  const box=document.getElementById("splitFolds"); box.innerHTML="";
+  const W=Math.min(box.clientWidth||600,640),Hh=170,m={l:44,r:10,t:16,b:40};
+  const svg=el("svg",{viewBox:`0 0 ${W} ${Hh}`,width:W,height:Hh,role:"img","aria-label":"Score per fold"},box);
+  const y0=0.85,y1=1.0, sy=v=>m.t+(1-(v-y0)/(y1-y0))*(Hh-m.t-m.b);
+  [0.85,0.9,0.95,1.0].forEach(v=>{el("line",{x1:m.l,x2:W-m.r,y1:sy(v),y2:sy(v),stroke:css("--line")},svg);const t=el("text",{x:m.l-6,y:sy(v)+4,"text-anchor":"end"},svg);t.textContent=v.toFixed(2);});
+  const bw=(W-m.l-m.r)/7;
+  if(s==="person"){
+    personFolds.forEach((v,i)=>{const x=m.l+i*bw+bw*0.18;el("rect",{x,y:sy(v),width:bw*0.64,height:sy(y0)-sy(v),rx:3,fill:css("--accent")},svg);
+      const t=el("text",{x:x+bw*0.32,y:sy(v)-4,"text-anchor":"middle"},svg);t.textContent=v.toFixed(3);
+      const l=el("text",{x:x+bw*0.32,y:Hh-24,"text-anchor":"middle"},svg);l.textContent="fold "+i;
+      const p=el("text",{x:x+bw*0.32,y:Hh-10,"text-anchor":"middle","font-size":W<500?"8":"10"},svg);p.textContent=foldPeople[i];});
+  } else {
+    const d=SPLIT[s], hi=Math.min(d.mean+d.sd,1);
+    el("rect",{x:m.l,y:sy(hi),width:W-m.l-m.r,height:sy(d.mean-d.sd)-sy(hi),fill:css("--accent-soft")},svg);
+    el("line",{x1:m.l,x2:W-m.r,y1:sy(d.mean),y2:sy(d.mean),stroke:css("--accent"),"stroke-width":2},svg);
+    const t=el("text",{x:W-m.r,y:sy(d.mean)-8,"text-anchor":"end"},svg);t.textContent=`all 7 folds: ${d.score} ${d.spread} (every fold mixes all 21 people)`;
+  }
+}
+document.querySelectorAll("#splitcard .seg button").forEach(b=>b.onclick=()=>setSplit(b.dataset.s));
+
+/* ---------- 2. tuning explorer ---------- */
+const CHOSEN={logistic_L2:"C=0.01",logistic_L1:"C=0.1",svm_rbf:"C=1 gamma=0.001",random_forest:"n_estimators=100 max_depth=10 max_features=sqrt"};
+const NOTES={
+  logistic_L2:"Penalty on squared weights. Small C = strong penalty (simpler), large C = weak penalty.",
+  logistic_L1:"Penalty on absolute weights: many weights become exactly zero. Features kept per fold: about 67 (C = 0.01), 180 (C = 0.1), 370 (C = 1).",
+  svm_rbf:"Simpler = smaller C and smaller gamma (smoother boundary). Settings with gamma = 0.1 collapse to about 0.06 and are drawn at the left edge.",
+  random_forest:"Simpler = shallower trees and fewer trees. All settings lie within 0.02 of each other."
+};
+let tuneModel="logistic_L2", tuneSel=null;
+function shortLabel(s,compact){ if(!compact) return s.replace("n_estimators=","trees=").replace("max_features=","feat=").replace("max_depth=","depth=");
+  return s.replace("n_estimators=","").replace(" max_depth=","t d").replace(" max_features="," ").replace("None","∞").replace(" gamma=",", γ="); }
+function drawTune(){
+  const rows=H.models[tuneModel].slice();
+  const box=document.getElementById("tuneChart"); box.innerHTML="";
+  document.getElementById("tuneNote").textContent=NOTES[tuneModel];
+  const best=rows.reduce((a,b)=>b.mean>a.mean?b:a); const thr=best.mean-best.se;
+  const W=Math.min(box.clientWidth||700,760), rh=22, lab=Math.min(W*0.42,300), m={l:lab,r:16,t:24,b:28};
+  const Hh=m.t+m.b+rows.length*rh;
+  const RANGE={logistic_L2:[0.88,0.96],logistic_L1:[0.88,0.96],svm_rbf:[0.85,0.96],random_forest:[0.87,0.93]}; const [x0,x1]=RANGE[tuneModel]; const sx=v=>m.l+(Math.max(Math.min(v,x1),x0)-x0)/(x1-x0)*(W-m.l-m.r);
+  const svg=el("svg",{viewBox:`0 0 ${W} ${Hh}`,width:W,height:Hh,role:"img","aria-label":"Tuning results"},box);
+  (()=>{const st=(x1-x0)>0.08?(W<520?0.04:0.02):(W<520?0.02:0.01);const out=[];for(let v=Math.ceil(x0/st)*st;v<=x1+1e-9;v+=st)out.push(+v.toFixed(2));return out;})().forEach(v=>{el("line",{x1:sx(v),x2:sx(v),y1:m.t-6,y2:Hh-m.b,stroke:css("--line")},svg);const t=el("text",{x:sx(v),y:Hh-m.b+16,"text-anchor":"middle"},svg);t.textContent=v.toFixed(2);});
+  el("line",{x1:sx(thr),x2:sx(thr),y1:m.t-10,y2:Hh-m.b,stroke:css("--warn"),"stroke-dasharray":"4 3","stroke-width":1.5},svg);
+  const nearR=sx(thr)>W-150; const tt=el("text",{x:nearR?sx(thr)-4:sx(thr)+4,y:m.t-12,"text-anchor":nearR?"end":"start"},svg); tt.textContent="best − 1 SE = "+thr.toFixed(3); tt.setAttribute("fill",css("--warn"));
+  rows.forEach((r,i)=>{
+    const y=m.t+i*rh+rh/2, chosen=r.setting===CHOSEN[tuneModel], ok=r.mean>=thr;
+    const g=el("g",{style:"cursor:pointer"},svg); g.onclick=()=>{tuneSel=r;showTuneDetail();};
+    el("rect",{x:0,y:y-rh/2,width:W,height:rh,fill:(tuneSel&&tuneSel.setting===r.setting)?css("--accent-soft"):"transparent"},g);
+    const t=el("text",{x:m.l-8,y:y+4,"text-anchor":"end","font-weight":chosen?"700":"400"},g);
+    t.textContent=shortLabel(r.setting,W<520)+(chosen?(W<520?" ←":"  ← chosen"):"");
+    if(chosen) t.setAttribute("fill",css("--ink"));
+    if(r.mean>=x0) el("line",{x1:sx(r.mean-r.se),x2:sx(r.mean+r.se),y1:y,y2:y,stroke:css("--muted"),"stroke-width":1.5},g);
+    el("circle",{cx:sx(r.mean),cy:y,r:chosen?6:4.5,fill:ok?css("--accent"):css("--surface"),stroke:css("--accent"),"stroke-width":1.5},g);
+    if(r.mean<x0){const o=el("text",{x:sx(x0)+10,y:y+4},g);o.textContent="off scale: "+r.mean.toFixed(3);}
+  });
+  if(!tuneSel||!rows.find(r=>r.setting===tuneSel.setting)) tuneSel=rows.find(r=>r.setting===CHOSEN[tuneModel]);
+  showTuneDetail();
+}
+function showTuneDetail(){
+  const r=tuneSel; if(!r) return;
+  document.getElementById("tuneDetail").innerHTML=`<strong>${r.setting}</strong>: mean ${fmt(r.mean)} ± ${fmt(r.se)} SE. Per fold: ${r.folds.map(v=>fmt(v)).join(", ")}. <span class="muted">Filled dots are within one SE of the best; click any row for its fold scores.</span>`;
+}
+document.querySelectorAll("#tuneTabs button").forEach(b=>b.onclick=()=>{tuneModel=b.dataset.m;tuneSel=null;document.querySelectorAll("#tuneTabs button").forEach(x=>x.classList.toggle("on",x===b));drawTune();});
+
+/* ---------- 3. selection per fold ---------- */
+const CANDS=[["lasso","logistic_L1","C=0.1","--c1"],["SVM","svm_rbf","C=1 gamma=0.001","--c2"],["forest","random_forest","n_estimators=100 max_depth=10 max_features=sqrt","--c3"]];
+const shown={lasso:true,SVM:true,forest:true};
+function candFolds(m,s){return H.models[m].find(r=>r.setting===s).folds;}
+function drawSel(){
+  const lg=document.getElementById("selLegend"); lg.innerHTML="";
+  CANDS.forEach(([n,m,s,c])=>{const r=H.models[m].find(x=>x.setting===s);const b=document.createElement("button");b.className=shown[n]?"":"off";b.innerHTML=`<span class="sw" style="background:${css(c)}"></span>${n} · ${fmt(r.mean)}`;b.onclick=()=>{shown[n]=!shown[n];drawSel();};lg.appendChild(b);});
+  const box=document.getElementById("selChart"); box.innerHTML="";
+  const W=Math.min(box.clientWidth||700,760),Hh=260,m={l:44,r:12,t:16,b:44};
+  const svg=el("svg",{viewBox:`0 0 ${W} ${Hh}`,width:W,height:Hh,role:"img","aria-label":"Macro-F1 per fold for three models"},box);
+  const y0=0.82,y1=1.0,sy=v=>m.t+(1-(v-y0)/(y1-y0))*(Hh-m.t-m.b),bw=(W-m.l-m.r)/7,sx=i=>m.l+bw*i+bw/2;
+  [0.85,0.9,0.95,1.0].forEach(v=>{el("line",{x1:m.l,x2:W-m.r,y1:sy(v),y2:sy(v),stroke:css("--line")},svg);const t=el("text",{x:m.l-6,y:sy(v)+4,"text-anchor":"end"},svg);t.textContent=v.toFixed(2);});
+  for(let i=0;i<7;i++){const t=el("text",{x:sx(i),y:Hh-26,"text-anchor":"middle"},svg);t.textContent="fold "+i;const p=el("text",{x:sx(i),y:Hh-12,"text-anchor":"middle","font-size":W<500?"8":"10"},svg);p.textContent=foldPeople[i];}
+  CANDS.forEach(([n,m2,s,c])=>{ if(!shown[n]) return; const f=candFolds(m2,s);
+    el("polyline",{points:f.map((v,i)=>sx(i)+","+sy(v)).join(" "),fill:"none",stroke:css(c),"stroke-width":2,opacity:.75},svg);
+    f.forEach((v,i)=>{const ci=el("circle",{cx:sx(i),cy:sy(v),r:5,fill:css(c)},svg);const ti=el("title",{},ci);ti.textContent=`${n}, fold ${i}: ${fmt(v)}`;});
+  });
+}
+
+/* ---------- 4. per person ---------- */
+function drawPerson(){
+  const pp=H.test.per_person, people=Object.keys(pp).sort((a,b)=>pp[b]-pp[a]);
+  const box=document.getElementById("personChart"); box.innerHTML="";
+  const W=Math.min(box.clientWidth||700,760),rh=26,m={l:80,r:56,t:8,b:8},Hh=m.t+m.b+people.length*rh;
+  const svg=el("svg",{viewBox:`0 0 ${W} ${Hh}`,width:W,height:Hh,role:"img","aria-label":"Test macro-F1 per person"},box);
+  const x0=0.75,sx=v=>m.l+(v-x0)/(1-x0)*(W-m.l-m.r);
+  el("line",{x1:sx(H.test.macro_f1),x2:sx(H.test.macro_f1),y1:0,y2:Hh,stroke:css("--muted"),"stroke-dasharray":"4 3"},svg);
+  people.forEach((p,i)=>{const y=m.t+i*rh,v=pp[p];
+    const t=el("text",{x:m.l-8,y:y+rh/2+4,"text-anchor":"end"},svg);t.textContent="person "+p;
+    el("rect",{x:m.l,y:y+4,width:sx(v)-m.l,height:rh-8,rx:3,fill:v<0.9?css("--warn"):css("--accent")},svg);
+    const vt=el("text",{x:sx(v)+6,y:y+rh/2+4},svg);vt.textContent=fmt(v);});
+  const lt=el("text",{x:sx(H.test.macro_f1)+4,y:Hh-4,"font-size":"10"},svg);lt.textContent="overall "+fmt(H.test.macro_f1);
+}
+
+/* ---------- 5. confusion matrix ---------- */
+const cmSel=document.getElementById("cmPerson");
+cmSel.innerHTML='<option value="all">all 9 test people</option>'+Object.keys(H.test.cm_by_person).map(p=>`<option value="${p}">person ${p} (macro-F1 ${fmt(H.test.per_person[p])})</option>`).join("");
+let cmCell=null;
+function cmFor(sel){ if(sel!=="all") return H.test.cm_by_person[sel];
+  const m=[...Array(6)].map(()=>Array(6).fill(0)); Object.values(H.test.cm_by_person).forEach(c=>c.forEach((r,i)=>r.forEach((v,j)=>m[i][j]+=v))); return m; }
+function drawCM(){
+  const sel=cmSel.value, m=cmFor(sel), tbl=document.getElementById("cmTable");
+  const rowTot=m.map(r=>r.reduce((a,b)=>a+b,0));
+  let h='<tr><th>true ↓ / predicted →</th>'+ACT.map(a=>`<th>${a}</th>`).join("")+'<th>recall</th></tr>';
+  m.forEach((r,i)=>{h+=`<tr><th>${ACTL[i]}</th>`+r.map((v,j)=>{const f=rowTot[i]?v/rowTot[i]:0;
+      const bg=i===j?`color-mix(in srgb, var(--accent) ${Math.round(f*70)}%, transparent)`:(v?`color-mix(in srgb, var(--warn) ${Math.round(15+Math.min(f*4,1)*60)}%, transparent)`:"transparent");
+      return `<td data-i="${i}" data-j="${j}" style="background:${bg}" class="${cmCell&&cmCell[0]===i&&cmCell[1]===j?"sel":""}">${v}</td>`;}).join("")+`<td class="muted" style="cursor:default">${rowTot[i]?fmt(r[i]/rowTot[i]):"–"}</td></tr>`;});
+  tbl.innerHTML=h;
+  tbl.querySelectorAll("td[data-i]").forEach(td=>td.onclick=()=>{cmCell=[+td.dataset.i,+td.dataset.j];drawCM();cmExplain();});
+}
+function cmExplain(){
+  if(!cmCell) return; const [i,j]=cmCell;
+  const parts=Object.entries(H.test.cm_by_person).map(([p,c])=>[p,c[i][j]]).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]);
+  const total=parts.reduce((a,b)=>a+b[1],0);
+  const what=i===j?`correctly recognised <strong>${ACTL[i]}</strong>`:`<strong>${ACTL[i]}</strong> predicted as <strong>${ACTL[j]}</strong>`;
+  document.getElementById("cmInfo").innerHTML = total? `${total} windows ${what}. By person: `+parts.map(([p,v])=>`person ${p}: ${v}`).join(" · ") : `No windows ${what}.`;
+}
+cmSel.onchange=drawCM;
+
+/* ---------- 6. confidence slider ---------- */
+const conf=H.test.conf, wrong=H.test.wrong, nWrong=wrong.reduce((a,b)=>a+b,0);
+function updConf(){
+  const th=+document.getElementById("confSlider").value; document.getElementById("confVal").textContent=th.toFixed(2);
+  let ans=0,ansWrong=0; for(let k=0;k<conf.length;k++){ if(conf[k]>=th){ans++; ansWrong+=wrong[k];} }
+  document.getElementById("cAns").textContent=Math.round(100*ans/conf.length)+"%";
+  document.getElementById("cAcc").textContent=ans?(100*(1-ansWrong/ans)).toFixed(1)+"%":"–";
+  document.getElementById("cCaught").textContent=Math.round(100*(nWrong-ansWrong)/nWrong)+"%";
+  document.getElementById("cLeft").textContent=ansWrong;
+}
+document.getElementById("confSlider").oninput=updConf;
+
+/* ---------- 7. phone test (section 9) ---------- */
+const P = window.PHONE, PW = P.windows.map(r=>({t:r[0]-1, p:r[1]-1, c:r[2], gy:r[3], gz:r[4], s:r[5]}));
+const phoneM = [...Array(6)].map(()=>Array(6).fill(0)); PW.forEach(w=>phoneM[w.t][w.p]++);
+let phoneCell=null;
+function drawPhoneCM(){
+  const m=phoneM, tbl=document.getElementById("phoneCm"), rowTot=m.map(r=>r.reduce((a,b)=>a+b,0));
+  let h='<tr><th>true ↓ / predicted →</th>'+ACT.map(a=>`<th>${a}</th>`).join("")+'<th>recall</th></tr>';
+  m.forEach((r,i)=>{h+=`<tr><th>${ACTL[i]}</th>`+r.map((v,j)=>{const f=rowTot[i]?v/rowTot[i]:0;
+      const bg=i===j?`color-mix(in srgb, var(--accent) ${Math.round(f*70)}%, transparent)`:(v?`color-mix(in srgb, var(--warn) ${Math.round(15+Math.min(f*4,1)*60)}%, transparent)`:"transparent");
+      return `<td data-i="${i}" data-j="${j}" style="background:${bg}" class="${phoneCell&&phoneCell[0]===i&&phoneCell[1]===j?"sel":""}">${v}</td>`;}).join("")+`<td class="muted" style="cursor:default">${fmt(r[i]/rowTot[i])}</td></tr>`;});
+  tbl.innerHTML=h;
+  tbl.querySelectorAll("td[data-i]").forEach(td=>td.onclick=()=>{phoneCell=[+td.dataset.i,+td.dataset.j];drawPhoneCM();phoneCmExplain();});
+}
+function phoneCmExplain(){
+  const [i,j]=phoneCell, ws=PW.filter(w=>w.t===i&&w.p===j);
+  const what=i===j?`correctly recognised <strong>${ACTL[i]}</strong>`:`<strong>${ACTL[i]}</strong> predicted as <strong>${ACTL[j]}</strong>`;
+  document.getElementById("phoneCmInfo").innerHTML = ws.length
+    ? `${ws.length} windows ${what}. ${i===j?"":"Start times within the recording (s) and confidence: "+ws.map(w=>`${w.s.toFixed(1)} (${w.c.toFixed(2)})`).join(" · ")}`
+    : `No windows ${what}.`;
+}
+function drawRecall(){
+  const box=document.getElementById("recallChart"); box.innerHTML="";
+  const tm=cmFor("all"), uci=tm.map((r,i)=>r[i]/r.reduce((a,b)=>a+b,0)), ph=phoneM.map((r,i)=>r[i]/r.reduce((a,b)=>a+b,0));
+  const W=Math.min(box.clientWidth||700,760), rh=40, m={l:92,r:52,t:6,b:24}, Hh=m.t+m.b+6*rh;
+  const svg=el("svg",{viewBox:`0 0 ${W} ${Hh}`,width:W,height:Hh,role:"img","aria-label":"Recall per activity, UCI test people vs phone"},box);
+  const x0=0.5, sx=v=>m.l+(v-x0)/(1-x0)*(W-m.l-m.r);
+  [0.5,0.6,0.7,0.8,0.9,1.0].forEach(v=>{el("line",{x1:sx(v),x2:sx(v),y1:m.t,y2:Hh-m.b,stroke:css("--line")},svg);const t=el("text",{x:sx(v),y:Hh-6,"text-anchor":"middle"},svg);t.textContent=v.toFixed(1);});
+  ACTL.forEach((a,i)=>{const y=m.t+i*rh;
+    const t=el("text",{x:m.l-8,y:y+rh/2+4,"text-anchor":"end"},svg);t.textContent=a;
+    [[uci[i],"--c1",4],[ph[i],"--c2",4+(rh-12)/2]].forEach(([v,c,dy])=>{const bh=(rh-12)/2;
+      const r=el("rect",{x:m.l,y:y+dy,width:Math.max(sx(Math.max(v,x0))-m.l,1),height:bh-2,rx:3,fill:css(c)},svg);
+      const ti=el("title",{},r);ti.textContent=`${a}: ${c==="--c1"?"UCI test people":"phone"} ${fmt(v)}`;
+      const vt=el("text",{x:sx(Math.max(v,x0))+5,y:y+dy+bh/2+2,"font-size":"11"},svg);vt.textContent=fmt(v);});
+  });
+}
+function drawTilt(){
+  const box=document.getElementById("tiltChart"); box.innerHTML="";
+  const W=Math.min(box.clientWidth||700,760), Hh=Math.round(Math.min(W*0.72,440)), m={l:52,r:14,t:12,b:40};
+  const svg=el("svg",{viewBox:`0 0 ${W} ${Hh}`,width:W,height:Hh,role:"img","aria-label":"Mean gravity y vs z: UCI training sitting and standing, phone windows"},box);
+  const xr=[-0.4,0.7], yr=[-0.5,0.75];
+  const sx=v=>m.l+(v-xr[0])/(xr[1]-xr[0])*(W-m.l-m.r), sy=v=>m.t+(1-(v-yr[0])/(yr[1]-yr[0]))*(Hh-m.t-m.b);
+  [-0.4,-0.2,0,0.2,0.4,0.6].forEach(v=>{el("line",{x1:sx(v),x2:sx(v),y1:m.t,y2:Hh-m.b,stroke:css("--line")},svg);const t=el("text",{x:sx(v),y:Hh-m.b+16,"text-anchor":"middle"},svg);t.textContent=v.toFixed(1);});
+  [-0.4,-0.2,0,0.2,0.4,0.6].forEach(v=>{el("line",{x1:m.l,x2:W-m.r,y1:sy(v),y2:sy(v),stroke:css("--line")},svg);const t=el("text",{x:m.l-6,y:sy(v)+4,"text-anchor":"end"},svg);t.textContent=v.toFixed(1);});
+  const xl=el("text",{x:(m.l+W-m.r)/2,y:Hh-6,"text-anchor":"middle"},svg);xl.textContent="mean gravity y (g)";
+  const yl=el("text",{x:14,y:(m.t+Hh-m.b)/2,"text-anchor":"middle",transform:`rotate(-90 14 ${(m.t+Hh-m.b)/2})`},svg);yl.textContent="mean gravity z (g)";
+  [["sit","--c1"],["stand","--c2"]].forEach(([k,c])=>P.uci_train_still[k].forEach(([gy,gz])=>{
+    if(gy<xr[0]||gy>xr[1]||gz<yr[0]||gz>yr[1]) return; el("circle",{cx:sx(gy),cy:sy(gz),r:1.8,fill:css(c),opacity:.28},svg);}));
+  PW.filter(w=>w.t===3||w.t===4).forEach(w=>{const ok=w.t===w.p, col=ok?css("--ink"):css("--warn");
+    const x=sx(w.gy), y=sy(w.gz); let mk;
+    if(w.t===3) mk=el("circle",{cx:x,cy:y,r:4.5,fill:ok?"none":col,stroke:col,"stroke-width":1.4},svg);
+    else mk=el("rect",{x:x-4,y:y-4,width:8,height:8,fill:ok?"none":col,stroke:col,"stroke-width":1.4},svg);
+    const ti=el("title",{},mk);ti.textContent=`phone ${ACTL[w.t]} at ${w.s.toFixed(1)} s: predicted ${ACTL[w.p]} (confidence ${w.c.toFixed(2)})`;});
+}
+function drawConfCompare(){
+  const bins=[["below 0.6",0,0.6],["0.6 to 0.9",0.6,0.9],["0.9 or above",0.9,1.01]];
+  const tc=H.test.conf, tw=H.test.wrong;
+  const row=([lab,lo,hi])=>{
+    let tn=0,tr=0; for(let k=0;k<tc.length;k++) if(tc[k]>=lo&&tc[k]<hi){tn++; tr+=1-tw[k];}
+    const pw=PW.filter(w=>w.c>=lo&&w.c<hi), pr=pw.filter(w=>w.t===w.p).length;
+    return `<tr><td>${lab}</td><td>${Math.round(100*tn/tc.length)}%</td><td>${tn?(100*tr/tn).toFixed(1)+"%":"–"}</td><td>${Math.round(100*pw.length/PW.length)}%</td><td>${pw.length?(100*pr/pw.length).toFixed(1)+"%":"–"}</td></tr>`;};
+  document.getElementById("confCompare").innerHTML='<tr><th>Model confidence</th><th>UCI test: share of windows</th><th>UCI test: accuracy</th><th>Phone: share of windows</th><th>Phone: accuracy</th></tr>'+bins.map(row).join("");
+}
+
+/* fill numbers that come from results/extra_experiments.csv */
+document.querySelectorAll("[data-ex]").forEach(e=>{const [k,f]=e.dataset.ex.split(".");e.textContent=EX?fmt(EX[k][f]):"–";});
+
+function renderAll(){ if(EX) setSplit(document.querySelector("#splitcard .seg button.on").dataset.s); drawTune(); drawSel(); drawPerson(); drawCM(); updConf(); drawPhoneCM(); drawRecall(); drawTilt(); drawConfCompare(); }
+renderAll();
+let rt; addEventListener("resize",()=>{clearTimeout(rt);rt=setTimeout(renderAll,150);});
+})();
+</script>
+</body>
+</html>
