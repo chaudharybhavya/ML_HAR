@@ -182,13 +182,9 @@ These are cross-validation scores used for *choosing*. They are slightly optimis
 All ten notebooks, the results files and the website are complete. The website presents the full reasoning (question, data, preprocessing, baseline and models, evaluation, results and error analysis, limitations, conclusions); this repository holds the code, the exact split (`results/folds.csv`) and every saved result needed to check it.
 
 ## AI assistance (disclosure)
-We used Claude (Anthropic) as a tutor and assistant, for both of our parts. It:
-- explained concepts, the physics of the data, and how each method works;
-- interpreted outputs with us and helped with debugging;
-- drafted parts of this README and of the notebook summaries;
-- built the structure and interactive charts of the website from our saved results, and the scripts that rebuild its data (`docs/make_data.py`, `docs/make_phone_data.py`);
+We used Claude (Anthropic) as a tutor and assistant. It explained concepts and the physics of the data; helped with debugging; suggested and wrote notebook code under our direction; drafted parts of the notebook text, the README and the website; and helped build the structure and interactive charts of the website from our saved results.
 
-We checked the reported numbers against our notebooks, and we are responsible for all results and can explain every step.
+We planned the analyses, set the rules they follow (person-wise folds, the one-standard-error rule, a blind phone test with nothing tuned on it) and made the decisions. We checked every reported number against our notebook outputs, we are responsible for all results, and we can explain every step.
 
 ## References and citations
 - **Dataset:** Anguita, D., Ghio, A., Oneto, L., Parra, X. and Reyes-Ortiz, J. L. (2013). A public domain dataset for human activity recognition using smartphones. *ESANN 2013*. UCI Machine Learning Repository, https://archive.ics.uci.edu/dataset/240/human+activity+recognition+using+smartphones (CC BY 4.0). The descriptions of the authors' preprocessing (noise filter, 0.3 Hz gravity filter, 2.56 s windows with 50% overlap, feature definitions) come from the dataset's own `README.txt` and `features_info.txt`.
